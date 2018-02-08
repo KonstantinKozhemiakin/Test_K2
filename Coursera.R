@@ -500,6 +500,330 @@ columnmeen(airquality)
 
 #-------------------------------------------------------------------------------
 
+## Write a function that reads a directory full of files and reports the number of completely observed cases in each data file.
+## The function should return a data frame where the first column is the name of the file and the second column is the number of complete cases.
+## A prototype of this function follows
+complete <- function(directory, id = 1:332) {
+        
+        ## Get a list of filenames
+        filenames <- list.files(path=directory, pattern="*.csv")
+        
+        ## Initialize variables
+        ids <-vector()
+        counts = vector()
+        
+        ## Loop over the passed id's
+        for(i in id) {
+                
+                ## Pad the i to create a filename
+                filename <- sprintf("%03d.csv", i)
+                filepath <- paste(directory, filename, sep="/")
+                
+                ## Load the data
+                data <- read.csv(filepath)
+                
+                ## Store the id
+                ids <- c(ids, i)
+                
+                ## Calculate and store the count of complete cases
+                completeCases <- data[complete.cases(data),]
+                counts <- c(counts, nrow(completeCases))
+        }
+        
+        ## Return the data frame
+        data.frame(id=ids, nobs=counts)
+}
+
+#-------------------------------------------------------------------------------
+
+## Write a function that takes a directory of data files and a threshold for
+## complete cases and calculates the correlation between sulfate and nitrate for
+## monitor locations where the number of completely observed cases (on all
+## variables) is greater than the threshold.
+## The function should return a vector of correlations for the monitors that
+## meet the threshold requirement. If no monitors meet the threshold
+## requirement, then the function should return a numeric vector of length 0.
+corr <- function(directory, threshold = 0) {
+        
+        completes <- complete(directory, 1:332)
+        completes <- subset(completes, nobs > threshold )
+        
+        ## Initialize variables
+        correlations <- vector()
+        
+        ## Loop over the passed id's
+        for(i in completes$id ) {
+                
+                ## Pad the i to create a filename
+                filename <- sprintf("%03d.csv", i)
+                filepath <- paste(directory, filename, sep="/")
+                
+                ## Load the data
+                data <- read.csv(filepath)
+                
+                ## Calculate and store the count of complete cases
+                completeCases <- data[complete.cases(data),]
+                count <- nrow(completeCases)
+                
+                ## Calculate and store the count of complete cases
+                ## if threshhold is reached
+                if( count >= threshold ) {
+                        correlations <- c(correlations, cor(completeCases$nitrate, completeCases$sulfate) )
+                }
+        }
+        
+        ## Return a numeric vector of correlations
+        correlations
+}
+
+#-------------------------------------------------------------------------------
+
+## Calculates the mean of a pollutant (sulfate or nitrate) across a specified list of monitors.
+## The function 'pollutantmean' takes three arguments: 'directory', 'pollutant', and 'id'.
+## Given a vector monitor ID numbers, 'pollutantmean' reads that monitors' particulate matter data
+## from the directory specified in the 'directory' argument and returns the mean of the pollutant
+## across all of the monitors, ignoring any missing values coded as NA.
+pollutantmean <- function(directory, pollutant, id = 1:332) {
+        
+        ## Get a list of filenames
+        filenames <- list.files(path=directory, pattern="*.csv")
+        
+        ## Initialize a vector to hold values
+        vals <- vector()
+        
+        ## Loop over the passed id's
+        for(i in id) {
+                
+                ## Pad the i to create a filename
+                filename <- sprintf("%03d.csv", i)
+                filepath <- paste(directory, filename, sep="/")
+                
+                ## Load the data
+                data <- read.csv(filepath)
+                
+                ## Select our column
+                d <- data[,pollutant]
+                
+                ## Ignore NAs
+                d <- d[!is.na(d)]
+                
+                ## append to our vector
+                vals <- c(vals, d)
+        }
+        
+        ## Return the value rounded to 3 dec places
+        round(mean(vals), 3)
+}
+
+#-------------------------------------------------------------------------------
+
+checkPkgs <- function() {
+        pkg.inst <- installed.packages()
+        pkgs <- c("RCurl", "digest")
+        have.pkg <- pkgs %in% rownames(pkg.inst)
+        
+        if(any(!have.pkg)) {
+                cat("Some packages need to be installed\n")
+                r <- readline("Install necessary packages [y/n]? ")
+                if(tolower(r) == "y") {
+                        need <- pkgs[!have.pkg]
+                        message("installing packages ",
+                                paste(need, collapse = ", "))
+                        install.packages(need)
+                }
+        }
+}
+
+checkPkgs()
+
+CLASS <- "rprog-002"
+challenge.url <- paste("http://class.coursera.org", CLASS,
+                       "assignment/challenge", sep = "/")
+submit.url <- paste("http://class.coursera.org", CLASS,
+                    "assignment/submit", sep = "/")
+
+loginPrompt <- function() {
+        email <- readline("Submission login (email): ")
+        passwd <- readline("Submission  password: ")
+        r <- list(email = email, passwd = passwd)
+        assign(".CourseraLogin", r, globalenv())
+        invisible(r)
+}
+
+submit <- function(manual = FALSE, resetLogin = FALSE) {
+        library(RCurl)
+        library(digest)
+        if(!manual) {
+                if(exists(".CourseraLogin") && !resetLogin)
+                        cred <- get(".CourseraLogin")
+                else
+                        cred <- loginPrompt()
+                if(!is.list(cred) || !(names(cred) %in% c("email", "passwd")))
+                        stop("problem with login/password")
+                email <- cred$email
+                password <- cred$passwd
+        }
+        ## Prompt Submission Part
+        sid <- partPrompt()
+        
+        ## Get output
+        output <- getOutput(sid)        
+        
+        if(!manual) {
+                ## Get challenge
+                ch <- getChallenge(email)
+                
+                ## Attempt submission with challenge
+                ch.resp <- challengeResponse(password, ch$ch.key)
+                results <- submitSolution(email, ch.resp, sid, output, ch$state)
+                if(!length(results))
+                        results <- "Incorrect!"
+                cat("Result: ", results, "\n")
+        }
+        else {
+                outfile <- paste(sid, "output.txt", sep = "-")
+                writeLines(as.character(output), outfile)
+                cat(sprintf("Please upload the file '%s' to Coursera\n",
+                            outfile))
+        }
+        invisible()
+}
+
+getOutput <- function(sid) {
+        ## JUST FOR TESTING
+        ### sid <- sub("-dev", "", sid, fixed = TRUE)
+        if(sid == "pollutantmean-1") {
+                source("pollutantmean.R")
+                pollutantmean("specdata", "sulfate", 1:10)
+        }
+        else if(sid == "pollutantmean-2") {
+                source("pollutantmean.R")
+                pollutantmean("specdata", "nitrate", 70:72)
+        }
+        else if(sid == "pollutantmean-3") {
+                source("pollutantmean.R")
+                pollutantmean("specdata", "sulfate", 34)
+        }
+        else if(sid == "pollutantmean-4") {
+                source("pollutantmean.R")
+                pollutantmean("specdata", "nitrate")
+        }
+        else if(sid == "complete-1") {
+                source("complete.R")
+                cc <- complete("specdata", c(6, 10, 20, 34, 100, 200, 310))
+                paste(cc$nobs, collapse = "\n")
+        }
+        else if(sid == "complete-2") {
+                source("complete.R")
+                cc <- complete("specdata", 54)
+                cc$nobs
+        }
+        else if(sid == "complete-3") {
+                source("complete.R")
+                set.seed(42)
+                cc <- complete("specdata", 332:1)
+                use <- sample(332, 10)
+                paste(cc[use, "nobs"], collapse = "\n")                
+        }
+        else if(sid == "corr-1") {
+                source("corr.R")
+                cr <- corr("specdata")
+                cr <- sort(cr)
+                set.seed(868)
+                out <- round(cr[sample(length(cr), 5)], 4)
+                paste(out, collapse = "\n")
+        }
+        else if(sid == "corr-2") {
+                source("corr.R")
+                cr <- corr("specdata", 129)
+                cr <- sort(cr)
+                n <- length(cr)
+                set.seed(197)
+                out <- c(n, round(cr[sample(n, 5)], 4))
+                paste(out, collapse = "\n")
+                
+        }
+        else if(sid == "corr-3") {
+                cr <- corr("specdata", 2000)
+                n <- length(cr)
+                cr <- corr("specdata", 1000)
+                cr <- sort(cr)
+                paste(c(n, round(cr, 4)), collapse = "\n")
+        }
+        else {
+                stop("invalid part number")
+        }
+}
+
+partPrompt <- function() {
+        sid <- c("pollutantmean-1",
+                 "pollutantmean-2",
+                 "pollutantmean-3",
+                 "pollutantmean-4",
+                 "complete-1",
+                 "complete-2",
+                 "complete-3",
+                 "corr-1",
+                 "corr-2",
+                 "corr-3"
+        )
+        ## JUST FOR TESTING
+        ## sid <- paste(sid, "dev", sep = "-")
+        
+        sidname <- c("'pollutantmean' part 1",
+                     "'pollutantmean' part 2",
+                     "'pollutantmean' part 3",
+                     "'pollutantmean' part 4",
+                     "'complete' part 1",
+                     "'complete' part 2",
+                     "'complete' part 3",
+                     "'corr' part 1",
+                     "'corr' part 2",
+                     "'corr' part 3"                     
+        )
+        numparts <- length(sid)
+        cat(paste(paste("[", seq_len(numparts), "]", sep = ""), sidname),
+            sep = "\n")
+        partnum <- readline(sprintf("Which part are you submitting [1-%d]? ",
+                                    numparts))
+        partnum <- as.integer(partnum)
+        if(is.na(partnum))
+                stop("please specify part number")
+        if(partnum > numparts)
+                stop("invalid part number")
+        sid[partnum]
+}
+
+getChallenge <- function(email) {
+        params <- list(email_address = email, response_encoding = "delim")
+        result <- getForm(challenge.url, .params = params)
+        s <- strsplit(result, "|", fixed = TRUE)[[1]]
+        list(ch.key = s[5], state = s[7])
+}
+
+challengeResponse <- function(password, ch.key) {
+        x <- paste(ch.key, password, sep = "")
+        digest(x, algo = "sha1", serialize = FALSE)
+}
+
+submitSolution <- function(email, ch.resp, sid, output, signature, src = "",
+                           http.version = NULL) {
+        output <- as.character(base64(output))
+        src <- as.character(base64(src))
+        params <- list(assignment_part_sid = sid,
+                       email_address = email,
+                       submission = output,
+                       submission_aux = src,
+                       challenge_response = ch.resp,
+                       state = signature)
+        params <- lapply(params, URLencode)
+        result <- postForm(submit.url, .params = params)
+        s <- strsplit(result, "\\r\\n")[[1]]
+        tail(s, 1)
+}
+
+#-------------------------------------------------------------------------------
+
 setwd("D:/Кости/R/R Script/")
 filelist <- list.files(path = "D:/Кости/R/R Script/specdata/",pattern = ".csv",full.names = T)
 
@@ -535,6 +859,7 @@ corr <- function(directory,threshold=0){
 corr("specdata/",1:10)
 
 #-------------------------------------------------------------------------------
+
 reading_file <- function(directory,column,names_col,col_m_1,col_m_2) {
         catalog <- list.files(path = directory,
                               pattern = ".csv",
@@ -553,9 +878,79 @@ reading_file <- function(directory,column,names_col,col_m_1,col_m_2) {
         #fin_mean
         #mean(fin_dat[["nitrate"]],na.rm = T)
 }
-reading_file(directory = "C:/Users/User/Documents/R/specdata",column = 4,names_col = c("Date","sulfate","nitrate","ID"),col_m_1 = 2,col_m_2 = 3)
+reading_file(directory = "D:/Кости/R/R Script/specdata",column = 4,names_col = c("Date","sulfate","nitrate","ID"),col_m_1 = 2,col_m_2 = 3)
+findat <- reading_file(directory = "D:/Кости/R/R Script/specdata",column = 4,names_col = c("Date","sulfate","nitrate","ID"),col_m_1 = 2,col_m_2 = 3)
+findat
+
 #-------------------------------------------------------------------------------
 
+## A pair of functions that cache the inverse of a matrix
+
+
+## Creates a special matrix object that can cache its inverse
+makeCacheMatrix <- function( m = matrix() ) {
+        
+        ## Initialize the inverse property
+        i <- NULL
+        
+        ## Method to set the matrix
+        set <- function( matrix ) {
+                m <<- matrix
+                i <<- NULL
+        }
+        
+        ## Method the get the matrix
+        get <- function() {
+                ## Return the matrix
+                m
+        }
+        
+        ## Method to set the inverse of the matrix
+        setInverse <- function(inverse) {
+                i <<- inverse
+        }
+        
+        ## Method to get the inverse of the matrix
+        getInverse <- function() {
+                ## Return the inverse property
+                i
+        }
+        
+        ## Return a list of the methods
+        list(set = set, get = get,
+             setInverse = setInverse,
+             getInverse = getInverse)
+}
+
+
+## Compute the inverse of the special matrix returned by "makeCacheMatrix"
+## above. If the inverse has already been calculated (and the matrix has not
+## changed), then the "cachesolve" should retrieve the inverse from the cache.
+cacheSolve <- function(x, ...) {
+        
+        ## Return a matrix that is the inverse of 'x'
+        m <- x$getInverse()
+        
+        ## Just return the inverse if its already set
+        if( !is.null(m) ) {
+                message("getting cached data")
+                return(m)
+        }
+        
+        ## Get the matrix from our object
+        data <- x$get()
+        
+        ## Calculate the inverse using matrix multiplication
+        m <- solve(data) %*% data
+        
+        ## Set the inverse to the object
+        x$setInverse(m)
+        
+        ## Return the matrix
+        m
+}
+
+#-------------------------------------------------------------------------------
 
 x < list(a = 1:5, b = rnorm(10))
 x < list(a = 1:5, b = rnorm(10))
@@ -652,9 +1047,9 @@ str(split(x, list(f1, f2))) #разбить вектор x в соответствии с двумя факторами (
 
 printmessage <- function(x) {
         if(x > 0)
-                + 		print("x is greater than zero")
+                print("x is greater than zero")
         else
-                + 		print("x is less than or equal to zero")
+                print("x is less than or equal to zero")
         invisible(x)
 }
 
@@ -663,9 +1058,11 @@ printmessage <- function(x) {
                 print("x is greater than zero")
         else
                 print("x is less than or equal to zero")
-        invisible(x) #предотвращает автоматический вывод результатов по окончанию фунции.
+        invisible(x) 
+        #предотвращает автоматический вывод результатов по окончанию фунции.
         #Можно пользоваться функцией load, которая работает с объектами простраства
 }
+
 printmessage(1)
 printmessage <- function(x) {
         if(x > 0)
@@ -687,4 +1084,539 @@ printmessage2 <- function(x) {
 }
 
 
-jlfdclhsfu;oeoveapf
+#rnorm (): генерировать случайные нормальные переменные с заданным средним и стандартным отклонением
+#dnorm (): оценить плотность нормальной вероятности (с заданным значением / SD) в точке (или векторе точек)
+#pnorm (): оценить кумулятивную функцию распределения для нормального распределения
+#rpois (): генерирует случайные вариации Пуассона с заданной скоростью
+#Функции распределения вероятности обычно имеют связанные с ними функции foud. Функции имеют префикс с ...
+
+#d для плотности
+#r для генерации случайных чисел
+#p для кумулятивного распределения
+#q для квантильной функции
+#Работа с нормальным распределением требует использования этих функций foud
+
+dnorm(x, mean = 0, sd = 1, log = FALSE)
+pnorm(q, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+qnorm(p, mean = 0, sd = 1, lower.tail = TRUE, loq.p = FALSE)
+rnorm(n, mean = 0, sd = 1)
+#Если phi - кумулятивная функция распределения для стандартного нормального распределения, то pnorm (q) = phi (q) и qnorm = (phi ^ -1) * p.
+
+x <- rnorm(10)
+x
+
+x <- rnorm(10, 20, 2)
+x
+summary(x)
+set.seed(5) #Начальное число для генератора случайных чисел 
+rnorm(5)
+
+rpois(10, 1)
+rpois(10, 2)
+rpois(10, 20)
+ppois(2, 2)
+ppois(4, 2)
+ppois(6, 2)
+
+
+set.seed(20)
+x <- rnorm(100)
+e <- rnorm(100, 0, 2)
+y <- 0.5 + 2 * x + e
+summary(y)
+plot(x, y)
+
+#x является двоичным
+set.seed(10)
+x <- rbinom(100, 1, 0.5)
+e <- rnorm(100, 0, 2)
+y <- 0.5 + 2 * x + e
+summary(y)
+plot(x, y)
+
+#имитировать модель Пуассона
+set.seed(1)
+x <- rnorm(100)
+log.mu <- 0.5 + 0.3 * x
+y <- rpois(100, exp(log.mu))
+summary(y)
+plot(x, y)
+
+
+set.seed(1)
+sample(1:10, 4)
+sample(1:10, 4)
+sample(letters, 5)
+sample(1:10)
+sample(1:10, replace = TRUE)
+
+
+system.time(readLines("http://www.jhsph.edu")) #для определения времени на работу программы
+
+hilbert <- function(n) {
+        i <- 1:n
+        1 / outer(i - 1, i, "+")
+}
+x <- hilbert(1000)
+system.time(svd(x))
+
+system.time({
+        n <- 1000
+        r <- numeric(n)
+        for (i in 1:n) {
+                x <- rnorm(n)
+                r[i] <- mean(x)
+        }
+})
+
+#Rprof () запускает профилировщик в R
+#summaryRprof () табулирует вывод R-профайлера и вычисляет, сколько времени тратится на какую функцию
+#by.total» делит время, затрачиваемое на каждую функцию, на общее время выполнения
+#«by.self» делает то же самое, но сначала вычитает время, затраченное на выполнение функций выше в стеке вызовов
+
+library(swirl)
+swirl()
+
+object.size()
+names()
+tail() #to view the last 6 rows.
+summary()
+table(plants$Active_Growth_Period)
+
+#simulate rolling four six-sided dice: 
+sample(1:6, 4, replace = TRUE)
+#The probability of rolling the exact same result is (1/6)^4 = 0.00077, which is pretty small!
+
+LETTERS
+sample(LETTERS)
+# Подброс несправедливой монетки
+flips <- sample(c(0,1), 100, replace = TRUE, prob = c(0.3, 0.7))
+rbinom(1, size = 100, prob = 0.7)
+flips2 <- rbinom(100, size = 1, prob = 0.7)
+
+#Each probability distribution in R has an r*** function (for "random"), 
+#a d*** function (for "density"), a p*** (for "probability"), and q*** (for "quantile").
+
+rnorm(10,mean = 100,sd = 25)
+cm <- colMeans(my_pois)
+
+data(cars)
+plot(x = cars$speed,y = cars$dist)
+plot(x = cars$speed, y = cars$dist, ylab = "Stopping Distance",xlab = "Speed")
+plot(cars,main= "My Plot")
+plot(cars,sub ="My Plot Subtitle")
+plot(cars,xlim = c(10,15))
+plot(cars,pch = 2)
+
+data(mtcars)
+boxplot(formula = mpg ~ cyl, data = mtcars)
+hist(mtcars$mpg)
+
+#-------------------------------------------------------------------------------
+
+setwd("D:/Кости/Coursera/Coursera Data Science/2. R Programming/4W/4. Programming Assignment/1/rprog%2Fdata%2FProgAssignment3-data/")
+dir()
+
+best <- function(state, outcome){
+        ## Validating the outcome string
+        ## Creating a vector the diseases whose outcome we may want
+        outcomes = c("heart attack", "heart failure", "pneumonia")
+        if(outcome %in% outcomes == FALSE) stop("invalid outcome")
+        
+        ## Read outcome data
+        data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+        
+        ## Filter and simplify the column names
+        data <- data[c(2, 7, 11, 17, 23)]
+        names(data)[1] <- "name"
+        names(data)[2] <- "state"
+        names(data)[3] <- "heart attack"
+        names(data)[4] <- "heart failure"
+        names(data)[5] <- "pneumonia"
+        
+        ## Validating the state string
+        states <- data[, 2]
+        states <- unique(states)
+        if(state %in% states == FALSE) stop("invalid state")
+        
+        ## Take only those rows with have the required state value	
+        data <- data[data$state==state & data[outcome] != 'Not Available', ]
+        vals <- data[, outcome]
+        rowNum <- which.min(vals)
+        ## Return hospital name in that state with lowest 30-day death rate
+        data[rowNum, ]$name
+}
+
+#-------------------------------------------------------------------------------
+
+rankall <- function(outcome, num = "best"){
+        ## Reading the outcome data
+        data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+        ## Selecting the columns that are reqiured and naming them
+        data <- data[c(2, 7, 11, 17, 23)]
+        names(data)[1] <- "name"
+        names(data)[2] <- "state"
+        names(data)[3] <- "heart attack"
+        names(data)[4] <- "heart failure"
+        names(data)[5] <- "pneumonia"
+        
+        ## Validating the outcome string
+        outcomes = c("heart attack", "heart failure", "pneumonia")
+        if(outcome %in% outcomes == FALSE) stop("invalid outcome")
+        
+        ## Validating the num value
+        if(num != "best" && num != "worst" && num%%1 != 0) stop("invalid num")
+        
+        ## Grab only those rows whose data is reqiured.
+        data <- data[data[outcome] != 'Not Available', ]
+        
+        ## Ordering the data in ascending order, first according to the names 
+        ## column and then according to their ranks for the specific outcome column
+        data[outcome] <- as.data.frame(sapply(data[outcome], as.numeric))
+        data <- data[order(data$name, decreasing = FALSE), ]
+        data <- data[order(data[outcome], decreasing = FALSE), ]
+        
+        ## Helper functiont to process the num argument
+        getHospByRank <- function(df, s, n) {
+                df <- df[df$state==s, ]
+                vals <- df[, outcome]
+                if(n == "best"){
+                        rowNum <- which.min(vals)
+                }else if(n == "worst" ){
+                        rowNum <- which.max(vals)
+                }else{
+                        rowNum <- n
+                }
+                df[rowNum, ]$name
+        }
+        
+        ## For each state, find the hospital of the given rank
+        states <- data[, 2]
+        states <- unique(states)
+        newdata <- data.frame("hospital"=character(), "state"=character())
+        for(st in states) {
+                hosp <- getHospByRank(data, st, num)
+                newdata <- rbind(newdata, data.frame(hospital=hosp, state=st))
+        }
+        
+        ## Return a data frame with the hospital names and the (abbreviated) 
+        ## state name
+        newdata <- newdata[order(newdata['state'], decreasing = FALSE), ]
+        newdata
+}
+
+#-------------------------------------------------------------------------------
+
+rankhospital <- function(state, outcome, num = "best") {
+        ## Reading the outcome data
+        data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+        ## Selecting the columns that are reqiured and naming them
+        data <- data[c(2, 7, 11, 17, 23)]
+        names(data)[1] <- "name"
+        names(data)[2] <- "state"
+        names(data)[3] <- "heart attack"
+        names(data)[4] <- "heart failure"
+        names(data)[5] <- "pneumonia"
+        
+        ## Validating the outcome string
+        outcomes = c("heart attack", "heart failure", "pneumonia")
+        if(outcome %in% outcomes == FALSE) stop("invalid outcome")
+        
+        ## Validating the state string
+        states <- data[, 2]
+        states <- unique(states)
+        if(state %in% states == FALSE) stop("invalid state")
+        
+        ## Validating the num value
+        if(num != "best" && num != "worst" && num%%1 != 0) stop("invalid num")
+        
+        ## Grab only those rows which matches the reqiured state value and 
+        ## whose data is available    
+        data <- data[data$state==state & data[outcome] != 'Not Available', ]
+        
+        ## Ordering the data in ascending order, first according to the names 
+        ## column and then according to their ranks for the specific outcome column
+        data[outcome] <- as.data.frame(sapply(data[outcome], as.numeric))
+        data <- data[order(data$name, decreasing = FALSE), ]
+        data <- data[order(data[outcome], decreasing = FALSE), ]
+        
+        ## Processing the num argument for various conditions
+        vals <- data[, outcome]
+        if(num == "best"){
+                rowNum <- which.min(vals)
+        }else if(num == "worst"){
+                rowNum <- which.max(vals)
+        }else{
+                rowNum <- num
+        }
+        
+        ## Return hospital name in that state with lowest 30-day death rate
+        data[rowNum, ]$name
+}
+
+#-------------------------------------------------------------------------------
+
+checkPkgs <- function() {
+        pkg.inst <- installed.packages()
+        pkgs <- c("RCurl", "digest")
+        have.pkg <- pkgs %in% rownames(pkg.inst)
+        
+        if(any(!have.pkg)) {
+                cat("Some packages need to be installed\n")
+                r <- readline("Install necessary packages [y/n]? ")
+                if(tolower(r) == "y") {
+                        need <- pkgs[!have.pkg]
+                        message("installing packages ",
+                                paste(need, collapse = ", "))
+                        install.packages(need)
+                }
+        }
+}
+
+checkPkgs()
+
+CLASS <- "rprog-002"
+challenge.url <- paste("http://class.coursera.org", CLASS,
+                       "assignment/challenge", sep = "/")
+submit.url <- paste("http://class.coursera.org", CLASS,
+                    "assignment/submit", sep = "/")
+
+loginPrompt <- function() {
+        email <- readline("Submission login (email): ")
+        passwd <- readline("Submission  password: ")
+        r <- list(email = email, passwd = passwd)
+        assign(".CourseraLogin", r, globalenv())
+        invisible(r)
+}
+
+submit <- function(manual = FALSE, resetLogin = FALSE) {
+        library(RCurl)
+        library(digest)
+        if(!manual) {
+                if(exists(".CourseraLogin") && !resetLogin)
+                        cred <- get(".CourseraLogin")
+                else
+                        cred <- loginPrompt()
+                if(!is.list(cred) || !(names(cred) %in% c("email", "passwd")))
+                        stop("problem with login/password")
+                email <- cred$email
+                password <- cred$passwd
+        }
+        ## Prompt Submission Part
+        sid <- partPrompt()
+        
+        ## Get output
+        output <- getOutput(sid)
+        
+        if(!manual) {
+                ## Get challenge
+                ch <- getChallenge(email)
+                
+                ## Attempt submission with challenge
+                ch.resp <- challengeResponse(password, ch$ch.key)
+                results <- submitSolution(email, ch.resp, sid, output, ch$state)
+                if(!length(results))
+                        results <- "Incorrect!"
+                cat("Result: ", results, "\n")
+        }
+        else {
+                outfile <- paste(sid, "output.txt", sep = "-")
+                writeLines(as.character(output), outfile)
+                cat(sprintf("Please upload the file '%s' to Coursera\n",
+                            outfile))
+        }
+        invisible()
+}
+
+checkResult <- function(r, name = c("best", "rankhospital", "rankall")) {
+        name <- match.arg(name)
+        if(name == "best" || name == "rankhospital") {
+                if(length(r) == 1L && is.na(r))
+                        return(r)
+                if(!is.character(r))
+                        stop(sprintf("'%s' did not return a character vector",
+                                     name))
+                if(!length(r))
+                        stop(sprintf("'%s' returned character vector of length 0", name))
+                if(length(r) > 1)
+                        stop(sprintf("'%s' returned a character vector of length > 1", name))
+        }
+        else if(name == "rankall") {
+                if(!is.data.frame(r))
+                        stop(sprintf("'%s' did not return a data frame", name))
+                if(ncol(r) != 2L)
+                        stop(sprintf("'%s' should return data frame with exactly 2 columns", name))
+                if(!all(names(r) %in% c("hospital", "state")))
+                        stop("column names of data frame should be 'hospital' and 'state'")
+        }
+        r
+}
+
+getOutput <- function(sid) {
+        ## JUST FOR TESTING
+        ## sid <- sub("-dev", "", sid, fixed = TRUE)
+        if(sid == "best-1") {
+                source("best.R", local = TRUE)
+                cat("Running test:\n")
+                cat("best(\"SC\", \"heart attack\")\n")
+                r <- best("SC", "heart attack")
+                checkResult(r, "best")
+        }
+        else if(sid == "best-2") {
+                source("best.R", local = TRUE)
+                cat("Running test:\n")
+                cat("best(\"NY\", \"pneumonia\")\n")
+                r <- best("NY", "pneumonia")
+                checkResult(r, "best")
+        }
+        else if(sid == "best-3") {
+                source("best.R", local = TRUE)
+                cat("Running test:\n")
+                cat("best(\"NN\", \"pneumonia\")\n")
+                r <- tryCatch(best("NN", "pneumonia"), error = function(e) e)
+                if(!inherits(r, "error"))
+                        stop("'best' should throw an error via the 'stop' function in this case")
+                tolower(conditionMessage(r))
+        }
+        else if(sid == "rankhospital-1") {
+                source("rankhospital.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankhospital(\"NC\", \"heart attack\", \"worst\")\n")
+                r <- rankhospital("NC", "heart attack", "worst")
+                checkResult(r, "rankhospital")
+        }
+        else if(sid == "rankhospital-2") {
+                source("rankhospital.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankhospital(\"WA\", \"heart attack\", 7)\n")
+                r <- rankhospital("WA", "heart attack", 7)
+                checkResult(r, "rankhospital")
+        }
+        else if(sid == "rankhospital-3") {
+                source("rankhospital.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankhospital(\"WA\", \"pneumonia\", 1000)\n")
+                rankhospital("WA", "pneumonia", 1000)
+        }
+        else if(sid == "rankhospital-4") {
+                source("rankhospital.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankhospital(\"NY\", \"heart attak\", 7)\n")
+                r <- tryCatch({
+                        rankhospital("NY", "heart attak", 7)
+                }, error = function(e) {
+                        e
+                })
+                if(!inherits(r, "error"))
+                        stop("'rankhospital' should throw an error via 'stop' in this case")
+                tolower(conditionMessage(r))
+        }
+        else if(sid == "rankall-1") {
+                source("rankall.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankall(\"heart attack\", 4)\n")
+                r <- rankall("heart attack", 4)
+                r <- checkResult(r, "rankall")
+                as.character(subset(r, state == "HI")$hospital)
+        }
+        else if(sid == "rankall-2") {
+                source("rankall.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankall(\"pneumonia\", \"worst\")\n")
+                r <- rankall("pneumonia", "worst")
+                r <- checkResult(r, "rankall")
+                as.character(subset(r, state == "NJ")$hospital)
+        }
+        else if(sid == "rankall-3") {
+                source("rankall.R", local = TRUE)
+                cat("Running test:\n")
+                cat("rankall(\"heart failure\", 10)\n")
+                r <- rankall("heart failure", 10)
+                r <- checkResult(r, "rankall")
+                as.character(subset(r, state == "NV")$hospital)
+        }
+        else {
+                stop("invalid part number")
+        }
+}
+
+partPrompt <- function() {
+        sid <- c("best-1",
+                 "best-2",
+                 "best-3",
+                 "rankhospital-1",
+                 "rankhospital-2",
+                 "rankhospital-3",
+                 "rankhospital-4",
+                 "rankall-1",
+                 "rankall-2",
+                 "rankall-3"
+        )
+        ## Just for testing
+        ## sid <- paste(sid, "dev", sep = "-")
+        
+        sidname <- c("'best' part 1",
+                     "'best' part 2",
+                     "'best' part 3",
+                     "'rankhospital' part 1",
+                     "'rankhospital' part 2",
+                     "'rankhospital' part 3",
+                     "'rankhospital' part 4",
+                     "'rankall' part 1",
+                     "'rankall' part 2",
+                     "'rankall' part 3"
+        )
+        numparts <- length(sid)
+        cat(paste(paste("[", seq_len(numparts), "]", sep = ""), sidname),
+            sep = "\n")
+        partnum <- readline(sprintf("Which part are you submitting [1-%d]? ",
+                                    numparts))
+        partnum <- as.integer(partnum)               
+        if(partnum > numparts)
+                stop("invalid part number")
+        sid[partnum]
+}
+
+getChallenge <- function(email) {
+        params <- list(email_address = email, response_encoding = "delim")
+        result <- getForm(challenge.url, .params = params)
+        s <- strsplit(result, "|", fixed = TRUE)[[1]]
+        list(ch.key = s[5], state = s[7])
+}
+
+challengeResponse <- function(password, ch.key) {
+        x <- paste(ch.key, password, sep = "")
+        digest(x, algo = "sha1", serialize = FALSE)
+}
+
+submitSolution <- function(email, ch.resp, sid, output, signature, src = "",
+                           http.version = NULL) {
+        output <- as.character(base64(output))
+        src <- as.character(base64(src))
+        params <- list(assignment_part_sid = sid,
+                       email_address = email,
+                       submission = output,
+                       submission_aux = src,
+                       challenge_response = ch.resp,
+                       state = signature)
+        params <- lapply(params, URLencode)
+        result <- postForm(submit.url, .params = params)
+        s <- strsplit(result, "\\r\\n")[[1]]
+        tail(s, 1)
+}
+
+#-------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
