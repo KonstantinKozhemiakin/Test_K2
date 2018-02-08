@@ -1,3 +1,9 @@
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+## R-Programming
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
 #Список установленных пакетов
 search()
 
@@ -47,22 +53,6 @@ packageVersion("swirl")
 library(swirl)
 install_from_swirl("R Programming")
 swirl()
-#You can exit swirl and return to the R prompt (>) at any time by pressing the Esc key. If
-#| you are already at the prompt, type bye() to exit and save your progress. When you exit
-#| properly, you'll see a short message letting you know you've done so.
-
-#| When you are at the R prompt (>):
-#| -- Typing skip() allows you to skip the current question.
-#| -- Typing play() lets you experiment with R on your own; swirl will ignore what you do...
-#| -- UNTIL you type nxt() which will regain swirl's attention.
-#| -- Typing bye() causes swirl to exit. Your progress will be saved.
-#| -- Typing main() returns you to swirl's main menu.
-#| -- Typing info() displays these options again.
-
-#If at any point you'd like more information on a particular topic related to R, you can
-#| type help.start() at the prompt, which will open a menu of resources (either within
-#| RStudio or your default web browser, depending on your setup). Alternatively, a simple
-#| web search often yields the answer you're looking for.
 
 # Справка по символу ":"
 ?`:`
@@ -252,8 +242,6 @@ str(tabAll)
 summary(tabAll)
 class(tabAll)
 
-getwd()
-setwd("C:/Users/User/Documents/R")
 
 ya <-  data.frame(a=1, b="a")
 dput(ya)
@@ -1220,7 +1208,7 @@ dir()
 best <- function(state, outcome){
         ## Validating the outcome string
         ## Creating a vector the diseases whose outcome we may want
-        outcomes = c("heart attack", "heart failure", "pneumonia")
+        outcoames = c("heart attack", "heart filure", "pneumonia")
         if(outcome %in% outcomes == FALSE) stop("invalid outcome")
         
         ## Read outcome data
@@ -1246,6 +1234,60 @@ best <- function(state, outcome){
         ## Return hospital name in that state with lowest 30-day death rate
         data[rowNum, ]$name
 }
+
+
+best(state = "KS",outcome = "heart attack")
+
+#-------------------------------------------------------------------------------
+
+rankhospital <- function(state, outcome, num = "best") {
+        ## Reading the outcome data
+        data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+        ## Selecting the columns that are reqiured and naming them
+        data <- data[c(2, 7, 11, 17, 23)]
+        names(data)[1] <- "name"
+        names(data)[2] <- "state"
+        names(data)[3] <- "heart attack"
+        names(data)[4] <- "heart failure"
+        names(data)[5] <- "pneumonia"
+        
+        ## Validating the outcome string
+        outcomes = c("heart attack", "heart failure", "pneumonia")
+        if(outcome %in% outcomes == FALSE) stop("invalid outcome")
+        
+        ## Validating the state string
+        states <- data[, 2]
+        states <- unique(states)
+        if(state %in% states == FALSE) stop("invalid state")
+        
+        ## Validating the num value
+        if(num != "best" && num != "worst" && num%%1 != 0) stop("invalid num")
+        
+        ## Grab only those rows which matches the reqiured state value and 
+        ## whose data is available    
+        data <- data[data$state==state & data[outcome] != 'Not Available', ]
+        
+        ## Ordering the data in ascending order, first according to the names 
+        ## column and then according to their ranks for the specific outcome column
+        data[outcome] <- as.data.frame(sapply(data[outcome], as.numeric))
+        data <- data[order(data$name, decreasing = FALSE), ]
+        data <- data[order(data[outcome], decreasing = FALSE), ]
+        
+        ## Processing the num argument for various conditions
+        vals <- data[, outcome]
+        if(num == "best"){
+                rowNum <- which.min(vals)
+        }else if(num == "worst"){
+                rowNum <- which.max(vals)
+        }else{
+                rowNum <- num
+        }
+        
+        ## Return hospital name in that state with lowest 30-day death rate
+        data[rowNum, ]$name
+}
+
+rankhospital(state = "KS", outcome = "heart attack")
 
 #-------------------------------------------------------------------------------
 
@@ -1305,311 +1347,13 @@ rankall <- function(outcome, num = "best"){
         newdata
 }
 
-#-------------------------------------------------------------------------------
-
-rankhospital <- function(state, outcome, num = "best") {
-        ## Reading the outcome data
-        data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
-        ## Selecting the columns that are reqiured and naming them
-        data <- data[c(2, 7, 11, 17, 23)]
-        names(data)[1] <- "name"
-        names(data)[2] <- "state"
-        names(data)[3] <- "heart attack"
-        names(data)[4] <- "heart failure"
-        names(data)[5] <- "pneumonia"
-        
-        ## Validating the outcome string
-        outcomes = c("heart attack", "heart failure", "pneumonia")
-        if(outcome %in% outcomes == FALSE) stop("invalid outcome")
-        
-        ## Validating the state string
-        states <- data[, 2]
-        states <- unique(states)
-        if(state %in% states == FALSE) stop("invalid state")
-        
-        ## Validating the num value
-        if(num != "best" && num != "worst" && num%%1 != 0) stop("invalid num")
-        
-        ## Grab only those rows which matches the reqiured state value and 
-        ## whose data is available    
-        data <- data[data$state==state & data[outcome] != 'Not Available', ]
-        
-        ## Ordering the data in ascending order, first according to the names 
-        ## column and then according to their ranks for the specific outcome column
-        data[outcome] <- as.data.frame(sapply(data[outcome], as.numeric))
-        data <- data[order(data$name, decreasing = FALSE), ]
-        data <- data[order(data[outcome], decreasing = FALSE), ]
-        
-        ## Processing the num argument for various conditions
-        vals <- data[, outcome]
-        if(num == "best"){
-                rowNum <- which.min(vals)
-        }else if(num == "worst"){
-                rowNum <- which.max(vals)
-        }else{
-                rowNum <- num
-        }
-        
-        ## Return hospital name in that state with lowest 30-day death rate
-        data[rowNum, ]$name
-}
+rankall(outcome = "heart attack", num = "worst")
 
 #-------------------------------------------------------------------------------
-
-checkPkgs <- function() {
-        pkg.inst <- installed.packages()
-        pkgs <- c("RCurl", "digest")
-        have.pkg <- pkgs %in% rownames(pkg.inst)
-        
-        if(any(!have.pkg)) {
-                cat("Some packages need to be installed\n")
-                r <- readline("Install necessary packages [y/n]? ")
-                if(tolower(r) == "y") {
-                        need <- pkgs[!have.pkg]
-                        message("installing packages ",
-                                paste(need, collapse = ", "))
-                        install.packages(need)
-                }
-        }
-}
-
-checkPkgs()
-
-CLASS <- "rprog-002"
-challenge.url <- paste("http://class.coursera.org", CLASS,
-                       "assignment/challenge", sep = "/")
-submit.url <- paste("http://class.coursera.org", CLASS,
-                    "assignment/submit", sep = "/")
-
-loginPrompt <- function() {
-        email <- readline("Submission login (email): ")
-        passwd <- readline("Submission  password: ")
-        r <- list(email = email, passwd = passwd)
-        assign(".CourseraLogin", r, globalenv())
-        invisible(r)
-}
-
-submit <- function(manual = FALSE, resetLogin = FALSE) {
-        library(RCurl)
-        library(digest)
-        if(!manual) {
-                if(exists(".CourseraLogin") && !resetLogin)
-                        cred <- get(".CourseraLogin")
-                else
-                        cred <- loginPrompt()
-                if(!is.list(cred) || !(names(cred) %in% c("email", "passwd")))
-                        stop("problem with login/password")
-                email <- cred$email
-                password <- cred$passwd
-        }
-        ## Prompt Submission Part
-        sid <- partPrompt()
-        
-        ## Get output
-        output <- getOutput(sid)
-        
-        if(!manual) {
-                ## Get challenge
-                ch <- getChallenge(email)
-                
-                ## Attempt submission with challenge
-                ch.resp <- challengeResponse(password, ch$ch.key)
-                results <- submitSolution(email, ch.resp, sid, output, ch$state)
-                if(!length(results))
-                        results <- "Incorrect!"
-                cat("Result: ", results, "\n")
-        }
-        else {
-                outfile <- paste(sid, "output.txt", sep = "-")
-                writeLines(as.character(output), outfile)
-                cat(sprintf("Please upload the file '%s' to Coursera\n",
-                            outfile))
-        }
-        invisible()
-}
-
-checkResult <- function(r, name = c("best", "rankhospital", "rankall")) {
-        name <- match.arg(name)
-        if(name == "best" || name == "rankhospital") {
-                if(length(r) == 1L && is.na(r))
-                        return(r)
-                if(!is.character(r))
-                        stop(sprintf("'%s' did not return a character vector",
-                                     name))
-                if(!length(r))
-                        stop(sprintf("'%s' returned character vector of length 0", name))
-                if(length(r) > 1)
-                        stop(sprintf("'%s' returned a character vector of length > 1", name))
-        }
-        else if(name == "rankall") {
-                if(!is.data.frame(r))
-                        stop(sprintf("'%s' did not return a data frame", name))
-                if(ncol(r) != 2L)
-                        stop(sprintf("'%s' should return data frame with exactly 2 columns", name))
-                if(!all(names(r) %in% c("hospital", "state")))
-                        stop("column names of data frame should be 'hospital' and 'state'")
-        }
-        r
-}
-
-getOutput <- function(sid) {
-        ## JUST FOR TESTING
-        ## sid <- sub("-dev", "", sid, fixed = TRUE)
-        if(sid == "best-1") {
-                source("best.R", local = TRUE)
-                cat("Running test:\n")
-                cat("best(\"SC\", \"heart attack\")\n")
-                r <- best("SC", "heart attack")
-                checkResult(r, "best")
-        }
-        else if(sid == "best-2") {
-                source("best.R", local = TRUE)
-                cat("Running test:\n")
-                cat("best(\"NY\", \"pneumonia\")\n")
-                r <- best("NY", "pneumonia")
-                checkResult(r, "best")
-        }
-        else if(sid == "best-3") {
-                source("best.R", local = TRUE)
-                cat("Running test:\n")
-                cat("best(\"NN\", \"pneumonia\")\n")
-                r <- tryCatch(best("NN", "pneumonia"), error = function(e) e)
-                if(!inherits(r, "error"))
-                        stop("'best' should throw an error via the 'stop' function in this case")
-                tolower(conditionMessage(r))
-        }
-        else if(sid == "rankhospital-1") {
-                source("rankhospital.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankhospital(\"NC\", \"heart attack\", \"worst\")\n")
-                r <- rankhospital("NC", "heart attack", "worst")
-                checkResult(r, "rankhospital")
-        }
-        else if(sid == "rankhospital-2") {
-                source("rankhospital.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankhospital(\"WA\", \"heart attack\", 7)\n")
-                r <- rankhospital("WA", "heart attack", 7)
-                checkResult(r, "rankhospital")
-        }
-        else if(sid == "rankhospital-3") {
-                source("rankhospital.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankhospital(\"WA\", \"pneumonia\", 1000)\n")
-                rankhospital("WA", "pneumonia", 1000)
-        }
-        else if(sid == "rankhospital-4") {
-                source("rankhospital.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankhospital(\"NY\", \"heart attak\", 7)\n")
-                r <- tryCatch({
-                        rankhospital("NY", "heart attak", 7)
-                }, error = function(e) {
-                        e
-                })
-                if(!inherits(r, "error"))
-                        stop("'rankhospital' should throw an error via 'stop' in this case")
-                tolower(conditionMessage(r))
-        }
-        else if(sid == "rankall-1") {
-                source("rankall.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankall(\"heart attack\", 4)\n")
-                r <- rankall("heart attack", 4)
-                r <- checkResult(r, "rankall")
-                as.character(subset(r, state == "HI")$hospital)
-        }
-        else if(sid == "rankall-2") {
-                source("rankall.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankall(\"pneumonia\", \"worst\")\n")
-                r <- rankall("pneumonia", "worst")
-                r <- checkResult(r, "rankall")
-                as.character(subset(r, state == "NJ")$hospital)
-        }
-        else if(sid == "rankall-3") {
-                source("rankall.R", local = TRUE)
-                cat("Running test:\n")
-                cat("rankall(\"heart failure\", 10)\n")
-                r <- rankall("heart failure", 10)
-                r <- checkResult(r, "rankall")
-                as.character(subset(r, state == "NV")$hospital)
-        }
-        else {
-                stop("invalid part number")
-        }
-}
-
-partPrompt <- function() {
-        sid <- c("best-1",
-                 "best-2",
-                 "best-3",
-                 "rankhospital-1",
-                 "rankhospital-2",
-                 "rankhospital-3",
-                 "rankhospital-4",
-                 "rankall-1",
-                 "rankall-2",
-                 "rankall-3"
-        )
-        ## Just for testing
-        ## sid <- paste(sid, "dev", sep = "-")
-        
-        sidname <- c("'best' part 1",
-                     "'best' part 2",
-                     "'best' part 3",
-                     "'rankhospital' part 1",
-                     "'rankhospital' part 2",
-                     "'rankhospital' part 3",
-                     "'rankhospital' part 4",
-                     "'rankall' part 1",
-                     "'rankall' part 2",
-                     "'rankall' part 3"
-        )
-        numparts <- length(sid)
-        cat(paste(paste("[", seq_len(numparts), "]", sep = ""), sidname),
-            sep = "\n")
-        partnum <- readline(sprintf("Which part are you submitting [1-%d]? ",
-                                    numparts))
-        partnum <- as.integer(partnum)               
-        if(partnum > numparts)
-                stop("invalid part number")
-        sid[partnum]
-}
-
-getChallenge <- function(email) {
-        params <- list(email_address = email, response_encoding = "delim")
-        result <- getForm(challenge.url, .params = params)
-        s <- strsplit(result, "|", fixed = TRUE)[[1]]
-        list(ch.key = s[5], state = s[7])
-}
-
-challengeResponse <- function(password, ch.key) {
-        x <- paste(ch.key, password, sep = "")
-        digest(x, algo = "sha1", serialize = FALSE)
-}
-
-submitSolution <- function(email, ch.resp, sid, output, signature, src = "",
-                           http.version = NULL) {
-        output <- as.character(base64(output))
-        src <- as.character(base64(src))
-        params <- list(assignment_part_sid = sid,
-                       email_address = email,
-                       submission = output,
-                       submission_aux = src,
-                       challenge_response = ch.resp,
-                       state = signature)
-        params <- lapply(params, URLencode)
-        result <- postForm(submit.url, .params = params)
-        s <- strsplit(result, "\\r\\n")[[1]]
-        tail(s, 1)
-}
-
 #-------------------------------------------------------------------------------
-
-
-
-
+## Getting and Cleaning Data
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 
 
