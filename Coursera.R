@@ -1355,12 +1355,83 @@ rankall(outcome = "heart attack", num = "worst")
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 
+setwd("d:/Кости/R/R Script/")
+
+install.packages("XML")
+install.packages("RCurl")
+install.packages("xlsx")
+install.packages("RCurl")
+
+# Проверка на существование папки с конкретным именем и создание, если таковой не было
+if(!file.exists("data")) {
+        dir.create("data")}
+
+fileUrl <- "https://data.baltimorecity.gov/api/views/dz54-2aru/rows.csv?accessType=DOWNLOAD"
+download.file(fileUrl,destfile = "D:/Кости/R/R Script/data/cameras.csv")
+list.files("D:/Кости/R/R Script/")
+dateDownloadet <- date()
+
+data <- read.table(file = "data/cameras.csv",header = T,sep = ",")
+data <- read.csv("data/cameras.csv")
+head(data)
 
 
+library(xlsx)
+fileUrl <- "https://cdn.online-convert.com/example-file/spreadsheet/xlsx/example.xlsx"
+download.file(fileUrl,destfile = "D:/Кости/R/R Script/data/example.xlsx")
+list.files("D:/Кости/R/R Script/")
+
+colIndex <- 2:3
+rowIndex <- 1:4
+data <- read.xlsx("data/cameras_2.xlsx",sheetIndex = 1,header = T,colIndex = colIndex,rowIndex = rowIndex)
+
+write.xlsx()
+read.xlsx2() # much fuster then previous but reading subset may be slightly unstable 
+
+#XML
+
+# Start tags <section>
+# End tags </section>
+# Empry tags <line-break/>
+
+# Example:
+#<Greeting> Hello,world </greeting>
+# Atributes are component of the lable
+#<img src="jef.jpg" alt="instructor"/>
+#<step number="3"> Connect A to B, </step>
 
 
+library(XML)
+library(RCurl)
+curlVersion()$features
+curlVersion()$protocol
 
+fileUrl <- "https://www.w3schools.com/xml/simple.xml" # for some reason Do not work !!??
+fileUrl <- getURL("https://www.w3schools.com/xml/simple.xml", ssl.verifyPeer=FALSE)
+doc <- xmlTreeParse(fileUrl,useInternal=TRUE)
+rootNode <- xmlRoot(doc) #Корневой элемент
 
+xmlName(rootNode) 
+names(rootNode)
+rootNode[[1]]
+rootNode[[1]][[1]]
+rootNode[[1]][[2]]
+xmlSApply(rootNode,xmlValue)
 
+# XPath 
+# /node Top level node (node is the name of tags)
+# //node Node at any level
+# node[@attr-name] Node with an attribute name
+# node[@attr-name='bob'] Node with attribute name attr-name='bob'
+# stat.berkeley.edu/https://www.stat.berkeley.edu/~statcur/Workshop2/Presentations/XML.pdf
 
+xpathSApply(rootNode,"//name",xmlValue) 
+xpathSApply(rootNode,"//price",xmlValue) 
+
+fileUrl <- "http://www.espn.com/nfl/team/_/name/bal/baltimore-ravens"
+doc <- htmlTreeParse(fileurl, useInternal=TRUE)
+teams <- xpathSApply(doc, "//div[@class='game-info']", xmlValue)
+teams
+score <- xpathSApply(doc, "//div[@class='score']",xmlValue)
+score
 
