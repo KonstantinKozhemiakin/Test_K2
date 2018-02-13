@@ -1357,11 +1357,6 @@ rankall(outcome = "heart attack", num = "worst")
 
 setwd("d:/Кости/R/R Script/")
 
-install.packages("XML")
-install.packages("RCurl")
-install.packages("xlsx")
-install.packages("RCurl")
-
 # Проверка на существование папки с конкретным именем и создание, если таковой не было
 if(!file.exists("data")) {
         dir.create("data")}
@@ -1400,7 +1395,7 @@ read.xlsx2() # much fuster then previous but reading subset may be slightly unst
 #<img src="jef.jpg" alt="instructor"/>
 #<step number="3"> Connect A to B, </step>
 
-
+## read xml file using library(xml)
 library(XML)
 library(RCurl)
 curlVersion()$features
@@ -1425,6 +1420,7 @@ xmlSApply(rootNode,xmlValue)
 # node[@attr-name='bob'] Node with attribute name attr-name='bob'
 # stat.berkeley.edu/https://www.stat.berkeley.edu/~statcur/Workshop2/Presentations/XML.pdf
 
+## Using xpathSApply to parse data
 xpathSApply(rootNode,"//name",xmlValue) 
 xpathSApply(rootNode,"//price",xmlValue) 
 
@@ -1435,3 +1431,256 @@ teams
 score <- xpathSApply(doc, "//div[@class='score']",xmlValue)
 score
 
+## Using jsonlite to parse JSON file
+
+library(jsonlite)
+jsonData <- fromJSON("https://api.github.com/users/jtleek/repos")
+names(jsonData)
+names(jsonData$owner)
+jsonData$owner
+jsonData$owner$login
+myjson <- toJSON(iris,pretty=TRUE)
+cat(myjson)
+iris2 <- fromJSON(myjson)
+iris2
+head(iris2)
+#r-bloggers.com/new-package-jsonlite-a-smarter-json-encoderdecoder/
+
+## Create data tables just like data frames
+
+library(data.table)
+DF = data.frame(x=rnorm(9),y=rep(c("a","b","c"),each=3),z=rnorm(9))
+head(DF)
+
+DT = data.table(x=rnorm(9),y=rep(c("a","b","c"),each=3), z=rnorm(9))
+head(DT,3)
+tables() #View all tables with data which saves in memory in now time
+DT[2,]
+
+DT[DT$y=="a",]
+#Выделяем таким образом вторую и третью строку (работает не как в DataFrame)
+DT[c(2,3)] 
+# Колонки выделяем так же иначе
+
+{
+        x = 1
+        y = 2
+}
+k = {print(10);5}
+print(k)
+
+# Среднее по колонкам "x" и "z"
+DT[,list(mean(x),sum(z))] 
+DT[,table(y)]
+DT[,w:=z^2]
+DT2 <- DT
+DT[,y:=2]
+DT[,m:={tmp <- (x+z);log2(tmp+5)}]
+DT[,a:=x>0]
+DT[,b:=mean(x+w),by=a]
+
+set.seed(123);
+DT <- data.table(x=sample(LETTERS[1:3],1E5,TRUE))
+DT[,.N,by=x] #.N подсчитывает количество раз втречаемых аргументов
+DT <- data.table(x=rep(c("a","b","c"),each=100),y=rnorm(300))
+setkey(DT,x) 
+DT['a']
+
+DT1 <- data.table(x=c('a','a','b','dt1'),y=1:4)
+DT2 <- data.table(x=c('a','b','dt2'),z=5:7)
+setkey(DT1,x);setkey(DT2,x)
+merge(DT1,DT2)
+
+big_df <- data.frame(x=rnorm(1E6),y=rnorm(1E6))
+file <- tempfile()
+write.table(big_df,file = file,row.names = F,col.names = T,sep = "\t",quote = F)
+system.time(fread(file))
+system.time(read.table(file,header = T,sep = "\t"))
+
+ls()
+rm(list=ls())
+library("dplyr")
+mydf <- read.csv(path2csv, stringsAsFactors = FALSE)
+cran <- tbl_df(mydf)
+rm("mydf")
+5:20
+select(cran, r_arch:country)
+select(cran, country:r_arch)
+select(cran, -time)
+-5:20
+-(5:20)
+select(cran, -(X:size))
+filter(cran, package == "swirl")
+filter(cran,r_version == "3.1.1", country == "US")
+filter(cran, r_version <= "3.0.2", country == "IN")
+filter(cran, country == "US" | country == "IN")
+filter(cran, size > 100500, r_os == "linux-gnu")
+is.na(c(3, 5, NA, 10))
+!is.na(c(3, 5, NA, 10))
+filter(cran, !is.na(r_version))
+cran2 <- select(cran,size:ip_id)
+arrange(cran2, ip_id)
+arrange(cran2, desc(ip_id))
+arrange(cran2, package, ip_id) #will first arrange by package names (ascending alphabetically), then by ip_id. This means that if there are multiple rows with the same value for package, they will be sorted by ip_id (ascending numerically)
+arrange(cran2,country,desc(r_version),ip_id)
+cran3 <- select(cran,ip_id,package,size)
+mutate(cran3, size_mb = size / 2^20)
+mutate(cran3, size_mb = size / 2^20,size_gb = size_mb/2^10)
+mutate(cran3, correct_size = size + 1000)
+summarize(cran, avg_bytes = mean(size))
+
+cran <- tbl_df(mydf)
+rm("mydf")
+by_package <- group_by(cran,package)
+summarize(by_package, mean(size))
+
+pack_sum <- summarize(by_package,
+                      count = n(),
+                      unique = n_distinct(ip_id),
+                      countries = n_distinct(country),
+                      avg_bytes = mean(size))
+
+quantile(pack_sum$count, probs = 0.99)
+top_counts <- filter(pack_sum,count>679)
+View(top_counts)
+top_counts_sorted <- arrange(top_counts,desc(count))
+View(top_counts_sorted)
+quantile(pack_sum$unique, probs = 0.99)
+top_unique <- filter(pack_sum,unique>465)
+top_unique_sorted <- arrange(top_unique,desc(unique))
+
+
+top_countries <- filter(pack_sum, countries > 60)
+result1 <- arrange(top_countries, desc(countries), avg_bytes)
+print(result1)
+
+
+result2 <-
+        arrange(
+                filter(
+                        summarize(
+                                group_by(cran,
+                                         package
+                                ),
+                                count = n(),
+                                unique = n_distinct(ip_id),
+                                countries = n_distinct(country),
+                                avg_bytes = mean(size)
+                        ),
+                        countries > 60
+                ),
+                desc(countries),
+                avg_bytes
+        )
+
+print(result2)
+
+
+result3 <-
+        cran %>%
+        group_by(package) %>%
+        summarize(count = n(),
+                  unique = n_distinct(ip_id),
+                  countries = n_distinct(country),
+                  avg_bytes = mean(size)
+        ) %>%
+        filter(countries > 60) %>%
+        arrange(desc(countries), avg_bytes)
+
+# Print result to console
+print(result3)
+
+cran %>%
+        select(ip_id, country, package, size) %>%
+        print
+
+cran %>%
+        select(ip_id, country, package, size) %>%
+        mutate(size_mb = size / 2^20) %>%
+        print
+
+cran %>%
+        select(ip_id, country, package, size) %>%
+        mutate(size_mb = size / 2^20) %>%
+        filter(size_mb <= 0.5)
+
+cran %>%
+        select(ip_id, country, package, size) %>%
+        mutate(size_mb = size / 2^20) %>%
+        filter(size_mb <= 0.5) %>%
+        arrange(desc(size_mb))
+
+library(tidyr)
+library(dplyr)
+
+# Tidy data
+#1: Each variable forms a column
+#2: Each observation forms a row
+#3: Each type of observational unit forms a table
+
+# messy data
+#1: Column headers are values, not variable names
+#2: Variables are stored in both rows and columns
+#3: A single observational unit is stored in multiple tables
+#4: Multiple types of observational units are stored in the same table
+#5: Multiple variables are stored in one column
+
+gather(students, sex, count, -grade)
+
+res <- gather(students2, sex_class, count, -grade)
+separate(data = res,col = sex_class, into = c("sex","class"))
+
+students2 %>%
+        gather(sex_class, count, -grade) %>%
+        separate(sex_class, c("sex", "class")) %>%
+        print
+
+students3 %>%
+        gather(class, grade, class1:class5, na.rm = TRUE) %>%
+        print
+
+gather(class, grade, class1:class5, na.rm = TRUE) %>%
+        spread(test, grade) %>%
+        print
+
+library(readr)
+parse_number("class5")
+students3 %>%
+        gather(class, grade, class1:class5, na.rm = TRUE) %>%
+        spread(test, grade) %>%
+        mutate(class = parse_number(class)) %>%
+        print
+
+
+
+
+
+
+
+
+
+## Reading from MySQL
+# https://class.coursera.org/getdata-017/lecture/21
+library(MRySQL)
+ucscDb <- dbConnect(MySQL(),user="genome",host="genome-mysql.cse.ucsc.edu")
+result <- dbGetQuery(ucscDb,"show databases;"); dbDisconnect(ucscDb);
+
+hg19 <- dbConnect(MySQL(),user="genome", db="hg19",host="genome-mysql.cse.ucsc.edu")
+allTables <- dbListTables(hg19)
+length(allTables)
+allTables[1:5]
+# Get dimensions of a specific table
+dbListFields(hg19,"affyU133Plus2")  # Get columns
+dbGetQuery(hg19, "select count(*) from affyU133Plus2")  # Get rows
+# Read from the table
+affyData <- dbReadTable(hg19, "affyU133Plus2")
+head(affyData)
+# Select a specific subset
+query <- dbSendQuery(hg19, "select * from affyU133Plus2 where misMatches between 1 and 3")
+affyMis <- fetch(query); quantile(affyMis$misMatches)
+
+# limit n = 10, top 10 , and need clear query
+affyMisSmall <- fetch(query,n=10); dbClearResult(query);
+dim(affyMisSmall)
+# Don't forget to close the connection!
+dbDisconnect(hg19)
