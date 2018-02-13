@@ -1639,10 +1639,6 @@ students3 %>%
         gather(class, grade, class1:class5, na.rm = TRUE) %>%
         print
 
-gather(class, grade, class1:class5, na.rm = TRUE) %>%
-        spread(test, grade) %>%
-        print
-
 library(readr)
 parse_number("class5")
 students3 %>%
@@ -1651,17 +1647,40 @@ students3 %>%
         mutate(class = parse_number(class)) %>%
         print
 
+student_info <- students4 %>%
+        select(id, name, sex) %>%
+        print
 
+student_info <- students4 %>%
+        select(id, name, sex) %>%
+        unique %>%
+        print
+gradebook <- students4 %>%
+        select(id, class, midterm, final) %>%
+        print
 
+passed <- passed %>% mutate(status = "passed")
+failed <- failed %>% mutate(status = "failed")
+bind_rows(passed, failed)
 
-
-
-
+sat %>%
+        select(-contains("total")) %>%
+        gather(key = part_sex, value = count, -score_range) %>%
+        separate(part_sex,c("part", "sex")) %>%
+        print
+sat %>%
+        select(-contains("total")) %>%
+        gather(part_sex, count, -score_range) %>%
+        separate(part_sex, c("part", "sex")) %>%
+        group_by(part, sex) %>%
+        mutate(total = sum(count),
+               prop = count / total
+        ) %>% print
 
 
 ## Reading from MySQL
 # https://class.coursera.org/getdata-017/lecture/21
-library(MRySQL)
+library(RMySQL)
 ucscDb <- dbConnect(MySQL(),user="genome",host="genome-mysql.cse.ucsc.edu")
 result <- dbGetQuery(ucscDb,"show databases;"); dbDisconnect(ucscDb);
 
@@ -1684,3 +1703,7 @@ affyMisSmall <- fetch(query,n=10); dbClearResult(query);
 dim(affyMisSmall)
 # Don't forget to close the connection!
 dbDisconnect(hg19)
+
+
+#ucscDb <- dbConnect(MySQL(),user="ASUS",host="C:/Program Files/Microsoft SQL Server/MSSQL13.MSSQLSERVER/MSSQL")
+#result2 <- dbGetQuery(ucscDb,"show databases;"); dbDisconnect(ucscDb);
