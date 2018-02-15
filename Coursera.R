@@ -1499,7 +1499,7 @@ system.time(read.table(file,header = T,sep = "\t"))
 
 ls()
 rm(list=ls())
-library("dplyr")
+library(dplyr)
 mydf <- read.csv(path2csv, stringsAsFactors = FALSE)
 cran <- tbl_df(mydf)
 rm("mydf")
@@ -1704,6 +1704,392 @@ dim(affyMisSmall)
 # Don't forget to close the connection!
 dbDisconnect(hg19)
 
+ucscDb <- dbConnect(MySQL(),user="ASUS",host="C:/Program Files/Microsoft SQL Server/MSSQL13.MSSQLSERVER/MSSQL/DATA/")
+result2 <- dbGetQuery(ucscDb,"show databases;"); dbDisconnect(ucscDb)
 
-#ucscDb <- dbConnect(MySQL(),user="ASUS",host="C:/Program Files/Microsoft SQL Server/MSSQL13.MSSQLSERVER/MSSQL")
-#result2 <- dbGetQuery(ucscDb,"show databases;"); dbDisconnect(ucscDb);
+## Reading from HDF5
+source("http://bioconductor.org/biocLite.R")
+biocLite("rhdf5")
+
+library(rhdf5)
+created = h5createFile("example.h5")
+created
+
+created = h5createGroup("example.h5","foo")
+created = h5createGroup("example.h5","baa")
+created = h5createGroup("example.h5","foo/foobaa")
+h5ls("example.h5")
+
+A = matrix(1:10,nr=5,nc=2)
+h5write(A,"example.h5","foo/A")
+B = array(seq(0.1,2.0,by=0.1),dim = c(5,2,2))
+attr(B,"scale") <- "liter"
+h5write(B,"example.h5","foo/foobaa/B")
+h5ls("example.h5")
+
+df = data.frame(1L:5L,seq(0,1,length.out = 5),
+                c("ab","cde","fghi","a","s"),stringsAsFactors = F)
+h5write(df,"example.h5","df")
+h5ls("example.h5")
+
+readA = h5read("example.h5","foo/A")
+readA = h5read("example.h5","foo/foobaa/B")
+readdf = h5read("example.h5","df")
+readA
+
+h5write(c(12,13,14),"example.h5","foo/A",index = list(1:3,1))
+h5read("example.h5","foo/A")
+
+## Reading from Web
+
+fileURL <- "https://github.com/KonstantinKozhemiakin/Test_K2"
+xData <- getURL(fileURL)
+con = xData
+htmlCode = readLines(con)
+close(con)
+htmlCode
+
+#Почему то не работает:
+library(XML)
+url <- "https://github.com/KonstantinKozhemiakin/Test_K2"
+html <- htmlTreeParse(url, useInternalNodes=T)
+
+#А это работает:
+library(XML)
+library(RCurl)
+fileURL <- "https://github.com/KonstantinKozhemiakin/Test_K2"
+xData <- getURL(fileURL)
+html <- htmlTreeParse(xData, useInternalNodes=T)
+xpathSApply(html, "//title", xmlValue)
+xpathSApply(html, "//td[@class='content']", xmlValue)
+
+library(httr);html2=GET(url)
+content2=content(html2,as="text")
+parsedHtml=htmlParse(content2,asText = T)
+xpathSApply(parsedHtml,"//title",xmlValue)
+
+pg1 = GET("http:/httpbin.org/basic-auth/user/passwd")
+pg1
+
+pg2 = GET("http://httpbin.org/basic-auth/user/passwd",
+          authenticate("user","passwd"))
+pg2
+names(pg2)
+
+google = handle("http://google.com")
+pg1 = GET(handle=google,path="/")
+pg2 = GET(handle=google,path="search")
+
+## Reading From APIs
+
+#Accessing Twitter from R
+library(httr)
+myapp = oauth_app("twitter", #name of application
+                  key="yourConsumerKeyHere",secret="yourConsumerSecretHere") #from application
+sig = sign_oauth1.0(myapp,
+                    token = "yourTokenHere",
+                    token_secret = "yourTokenSecretHere")
+homeTL = GET("https://api.twitter.com/1.1/statuses/home_timeline.json", sig)
+#Converting the json object
+json1 = content(homeTL)
+json2 = jsonlite::fromJSON(toJSON(json1))
+json2[1,1:4]
+
+#Subsetting - quick review
+set.seed(13435)
+X <- data.frame("var1"=sample(1:5),"var2"=sample(6:10),"var3"=sample(11:15))
+X <- X[sample(1:5),]; X$var2[c(1,3)] = NA
+X
+
+#Subsetting - quick review
+X[,1]
+X[,"var1"]
+X[1:2,"var2"]
+
+#Logicals ands and ors
+X[(X$var1 <= 3 & X$var3 > 11),]
+X[(X$var1 <= 3 | X$var3 > 15),]
+
+#Dealing with missing values
+X[which(X$var2 > 8),]
+
+#Sorting
+sort(X$var1)
+sort(X$var1,decreasing=TRUE)
+sort(X$var2,na.last=TRUE)
+
+#Ordering
+X[order(X$var1),]
+X[order(X$var1,X$var3),]
+
+#Ordering with plyr
+library(plyr)
+arrange(X,var1)
+arrange(X,desc(var1))
+
+#Adding rows and columns
+X$var4 <- rnorm(5)
+X
+
+Y <- cbind(X,rnorm(5))
+Y
+
+## summarizing Data
+
+#Getting the data from the web
+
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl <- "https://data.baltimorecity.gov/api/views/k5ry-ef3g/rows.csv?accessType=DOWNLOAD"
+download.file(fileUrl,destfile="./data/restaurants.csv") #удалил- ,method="curl" -не работало
+restData <- read.csv("./data/restaurants.csv")
+
+#Look at a bit of the data
+head(restData,n=3)
+tail(restData,n=3)
+summary(restData)
+str(restData)
+quantile(restData$councilDistrict,na.rm=TRUE)
+quantile(restData$councilDistrict,probs=c(0.5,0.75,0.9))
+
+#Make table
+table(restData$zipCode,useNA="ifany")
+table(restData$councilDistrict,restData$zipCode)
+
+#Check for missing values
+sum(is.na(restData$councilDistrict))
+any(is.na(restData$councilDistrict))
+all(restData$zipCode > 0)
+
+#Row and column sums
+colSums(is.na(restData))
+all(colSums(is.na(restData))==0)
+
+#Values with specific characteristics
+table(restData$zipCode %in% c("21212"))
+table(restData$zipCode %in% c("21212","21213"))
+restData[restData$zipCode %in% c("21212","21213"),]
+
+#Cross tabs
+data(UCBAdmissions)
+DF = as.data.frame(UCBAdmissions)
+summary(DF)
+
+xt <- xtabs(Freq ~ Gender + Admit,data=DF)
+xt
+
+#Flat tables
+warpbreaks$replicate <- rep(1:9, len = 54)
+xt = xtabs(breaks ~.,data=warpbreaks)
+xt
+ftable(xt)
+
+#Size of a data set
+fakeData = rnorm(1e5)
+object.size(fakeData)
+print(object.size(fakeData),units="Mb")
+
+## creatingNewVariables
+
+#Getting the data from the web
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl <- "https://data.baltimorecity.gov/api/views/k5ry-ef3g/rows.csv?accessType=DOWNLOAD"
+download.file(fileUrl,destfile="./data/restaurants.csv")
+restData <- read.csv("./data/restaurants.csv")
+
+#Creating sequences
+#Sometimes you need an index for your data set
+s1 <- seq(1,10,by=2) ; s1
+s2 <- seq(1,10,length=3); s2
+x <- c(1,3,8,25,100); seq(along = x)
+
+#Subsetting variables
+restData$nearMe = restData$neighborhood %in% c("Roland Park", "Homeland")
+table(restData$nearMe)
+
+#Creating binary variables
+restData$zipWrong = ifelse(restData$zipCode < 0, TRUE, FALSE)
+table(restData$zipWrong,restData$zipCode < 0)
+
+#Creating categorical variables
+restData$zipGroups = cut(restData$zipCode,breaks=quantile(restData$zipCode))
+table(restData$zipGroups)
+table(restData$zipGroups,restData$zipCode)
+
+#Easier cutting
+library(Hmisc)
+restData$zipGroups = cut2(restData$zipCode,g=4)
+table(restData$zipGroups)
+
+#Creating factor variables
+restData$zcf <- factor(restData$zipCode)
+restData$zcf[1:10]
+class(restData$zcf)
+
+#Levels of factor variables
+yesno <- sample(c("yes","no"),size=10,replace=TRUE)
+yesnofac = factor(yesno,levels=c("yes","no"))
+relevel(yesnofac,ref="yes")
+as.numeric(yesnofac)
+
+#Cutting produces factor variables
+library(Hmisc)
+restData$zipGroups = cut2(restData$zipCode,g=4)
+table(restData$zipGroups)
+
+#Using the mutate function
+library(Hmisc); library(plyr)
+restData2 = mutate(restData,zipGroups=cut2(zipCode,g=4))
+table(restData2$zipGroups)
+
+#Common transforms
+abs(x) #absolute value
+sqrt(x) #square root
+ceiling(x) #ceiling(3.475) is 4
+floor(x) #floor(3.475) is 3
+round(x,digits=n) #roun(3.475,digits=2) is 3.48
+signif(x,digits=n) #signif(3.475,digits=2) is 3.5
+cos(x) sin(x) #etc.
+log(x) #natural logarithm
+log2(x) log10(x) #other common logs
+exp(x) #exponentiating x
+
+## reshapingData
+
+#Each variable forms a column
+#Each observation forms a row
+#Each table/file stores data about one kind of observation (e.g. people/hospitals).
+
+#Start with reshaping
+library(reshape2)
+head(mtcars)
+
+#Melting data frames (Урезать датаcет)
+mtcars$carname <- rownames(mtcars)
+carMelt <- melt(mtcars,id=c("carname","gear","cyl"),measure.vars=c("mpg","hp"))
+head(carMelt,n=3)
+tail(carMelt,n=3)
+
+#Casting data frames
+cylData <- dcast(carMelt, cyl ~ variable)
+cylData
+cylData <- dcast(carMelt, cyl ~ variable,mean)
+cylData
+
+#Averaging values
+head(InsectSprays)
+tapply(InsectSprays$count,InsectSprays$spray,sum)
+
+#Another way - split
+spIns =  split(InsectSprays$count,InsectSprays$spray)
+spIns
+
+#Another way - apply
+sprCount = lapply(spIns,sum)
+sprCount
+
+#Another way - combine
+unlist(sprCount)
+sapply(spIns,sum)
+
+#Another way - plyr package
+library(plyr)
+ddply(InsectSprays,.(spray),summarize,sum=sum(count))
+
+#Creating a new variable
+spraySums <- ?ddply(InsectSprays,.(spray),summarize,sum=ave(count,FUN=sum))
+dim(spraySums)
+head(spraySums)
+
+#also the functions
+#acast - for casting as multi-dimensional arrays
+#arrange - for faster reordering without using order() commands
+#mutate - adding new variables
+
+## dplyr
+
+library(dplyr)
+# select - return a subset of the column of data frame
+# filter - extract a sabset of rows from a data frame based on logical condition
+# arrange - reorder roes of DF
+# rename - rename variables in DF
+# mutate - add new variables/columns or transform existing variables
+# summarise/summarize - generate summary statistics of different variables in the DF,
+#possibly with strata
+
+cars2 <- as.data.frame(mtcars)
+names(cars2)
+head(select(cars2,wt:carb))
+head(select(cars2,-(wt:carb)))
+
+i <- match("wt", names(cars2))
+j <- match("carb",names(cars2))
+head(cars2[,-(i:j)])
+
+car.f <- filter(cars2,disp>200);car.f 
+car.f <- filter(cars2,disp>200 & cyl<8);car.f 
+
+cars2 <- arrange(cars2,mpg); head(cars2);tail(cars2)
+cars2 <- arrange(cars2,desc(mpg)); head(cars2);tail(cars2)
+
+cars2 <- rename(cars2,disps = disp, wts = wt);head(cars2)
+
+cars2 <- mutate(cars2, disps2 = disps-mean(disps,na.rm = T))
+head(select(cars2,disps,disps2))
+
+cars2 <- as.data.frame(mtcars) ; head(cars2)
+cars2 <- mutate(cars2, cil_6 = factor(1*(cyl>6),labels = c("down","up")));head(cars2)
+
+carscil <- group_by(cars2,cil_6); head(carsdisp)
+summarise(carscil,disp=mean(disp),mpgs=max(mpg),wts=median(wt))
+
+cars2 %>% mutate(cil_6 = factor(1*(cyl>6),labels = c("down","up"))) %>% 
+        group_by(cil_6) %>%
+        summarise(disp=mean(disp),mpgs=max(mpg),wts=median(wt)) %>%
+        print
+
+## merging Data
+
+#Peer review data
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl1 = "https://github.com/jtleek/modules/tree/master/03_GettingData/03_05_mergingData/data/reviews.csv"
+fileUrl2 = "https://github.com/jtleek/modules/tree/master/03_GettingData/03_05_mergingData/data/solutions.csv"
+
+download.file(fileUrl1,destfile="./data/reviews.csv")
+download.file(fileUrl2,destfile="./data/solutions.csv")
+reviews = read.csv("./data/reviews.csv"); solutions <- read.csv("./data/solutions.csv") # Не рабочая ссылка
+reviews = read.csv("./data/reviews2.csv",sep = ";"); solutions <- read.csv("./data/solutions2.csv",sep = ";")
+head(reviews,2)
+head(solutions,2)
+
+#Merging data - merge()
+#Merges data frames
+#Important parameters: x,y,by,by.x,by.y,all
+names(reviews)
+names(solutions)
+
+#Merging data - merge()
+mergedData = merge(reviews,solutions,by.x="solution_id",by.y="id",all=TRUE)
+head(mergedData)
+
+#Default - merge all common column names
+intersect(names(solutions),names(reviews))
+mergedData2 = merge(reviews,solutions,all=TRUE)
+head(mergedData2)
+
+#Using join in the plyr package
+#Faster, but less full featured - defaults to left join, see help file for more
+
+library(plyr)
+df1 = data.frame(id=sample(1:10),x=rnorm(10))
+df2 = data.frame(id=sample(1:10),y=rnorm(10))
+arrange(join(df1,df2),id)
+
+#If you have multiple data frames
+df1 = data.frame(id=sample(1:10),x=rnorm(10))
+df2 = data.frame(id=sample(1:10),y=rnorm(10))
+df3 = data.frame(id=sample(1:10),z=rnorm(10))
+dfList = list(df1,df2,df3)
+join_all(dfList)
+
+
+
