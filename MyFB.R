@@ -2,15 +2,15 @@ library(?Rfacebook)
 library(httr)
 
 oauth_endpoints("facebook")
-AppID <- "946502832172960"
-AppSecret <- "427cae2aa750e57f2766206557b1a439"
+AppID <- ""
+AppSecret <- ""
 app <- oauth_app('facebook', AppID, AppSecret)
 fb_token <- oauth2.0_token(oauth_endpoints("facebook"), app,
                            scope = "read_insights",
                            type  = "application/x-www-form-urlencoded", 
                            cache = FALSE)
 # This saves the token for future use without having to login everytime you want to use the package
-save(fb_token, file = "D://Êîñòè/R/fb_token/fb_token.R")
+save(fb_token, file = "D://ÃŠÃ®Ã±Ã²Ã¨/R/fb_token/fb_token.R")
 
 getFriends(token = fb_token, simplify = FALSE)
 MyhomeTL = GET("https://api.twitter.com/1.1/statuses/home_timeline.json", sig)
