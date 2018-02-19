@@ -2091,5 +2091,247 @@ df3 = data.frame(id=sample(1:10),z=rnorm(10))
 dfList = list(df1,df2,df3)
 join_all(dfList)
 
+## editing Text Variables
 
+#Fixing character vectors - tolower(), toupper()
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl <- "https://data.baltimorecity.gov/api/views/dz54-2aru/rows.csv?accessType=DOWNLOAD"
+download.file(fileUrl,destfile="./data/cameras.csv")
+cameraData <- read.csv("./data/cameras.csv")
+names(cameraData)
+
+toupper(names(cameraData))
+tolower(names(cameraData)) 
+
+#Fixing character vectors - strsplit()
+#Good for automatically splitting variable names
+#Important parameters: x, split
+splitNames = strsplit(names(cameraData),"\\.")
+splitNames[[5]]
+splitNames[[6]]
+
+#Quick aside - lists
+mylist <- list(letters = c("A", "b", "c"), numbers = 1:3, matrix(1:25, ncol = 5))
+head(mylist)
+
+#Quick aside - lists
+mylist[1]
+mylist$letters
+mylist[[1]]
+
+#Fixing character vectors - sapply()
+#Applies a function to each element in a vector or list
+#Important parameters: X,FUN
+splitNames[[6]][2]
+
+firstElement <- function(x){x[1]}
+sapply(splitNames,firstElement)
+
+#Peer review data
+reviews = read.csv("./data/reviews2.csv",sep = ";"); solutions <- read.csv("./data/solutions2.csv",sep = ";")
+head(reviews,2);head(solutions,2)
+
+#Fixing character vectors - sub()
+#Important parameters: pattern, replacement, x
+names(reviews)
+sub("_","",names(reviews),)
+
+#Fixing character vectors - gsub()
+testName <- "this_is_a_test"
+sub("_","",testName)
+gsub("_","",testName)
+
+#Finding values - grep(),grepl()
+grep("Alameda",cameraData$intersection)
+table(grepl("Alameda",cameraData$intersection))
+cameraData2 <- cameraData[!grepl("Alameda",cameraData$intersection),]
+
+#More on grep()
+grep("Alameda",cameraData$intersection,value=TRUE)
+grep("JeffStreet",cameraData$intersection)
+length(grep("JeffStreet",cameraData$intersection))
+
+#More useful string functions
+library(stringr)
+nchar("Jeffrey Leek")
+substr("Jeffrey Leek",1,7)
+paste("Jeffrey","Leek")
+
+#More useful string functions
+paste0("Jeffrey","Leek")
+str_trim("Jeff      ")
+
+## working With Dates
+
+#Starting simple
+d1 = date()
+d1
+class(d1)
+
+#Date class
+d2 = Sys.Date()
+d2class(d2)
+
+#Formatting dates
+#%d = day as number (0-31), %a = abbreviated weekday,%A = unabbreviated weekday, %m = month (00-12), %b = abbreviated month, %B = unabbrevidated month, %y = 2 digit year, %Y = four digit year
+format(d2,"%a %b %d")
+
+#Creating dates
+x = c("1січ1960", "2січ1960", "31бер1960", "30вер1960"); z = as.Date(x, "%d%b%Y")
+z
+z[1] - z[2]
+as.numeric(z[1]-z[2])
+
+#Converting to Julian
+weekdays(d2)
+months(d2)
+julian(d2)
+
+#Lubridate
+library(lubridate); ymd("20140108")
+mdy("08/04/2013")
+dmy("03-04-2013")
+
+#Dealing with times
+ymd_hms("2011-08-03 10:15:03")
+ymd_hms("2011-08-03 10:15:03",tz="Pacific/Auckland")
+?Sys.timezone
+
+#Some functions have slightly different syntax
+x = dmy(c("1jan2013", "2jan2013", "31mar2013", "30jul2013"))
+wday(x[1])
+wday(x[1],label=TRUE)
+
+## Coursera Test run_analysis.R #1
+setwd("D:/Кости/Coursera/Coursera Data Science/3. Getting and Cleaning Data/4W/4. Course Project/1/UCI HAR Dataset/")
+library(reshape2)
+
+# Load the various datasets
+test.subject <- read.table("./test/subject_test.txt")
+test.x <- read.table("./test/X_test.txt")
+test.y <- read.table("./test/y_test.txt")
+
+train.subject <- read.table("./train/subject_train.txt")
+train.x <- read.table("./train/X_train.txt")
+train.y <- read.table("./train/y_train.txt")
+
+features <- read.table("./features.txt")
+activity.labels <- read.table("./activity_labels.txt")
+
+# Merge the test and train subject datasets
+subject <- rbind(test.subject, train.subject)
+colnames(subject) <- "subject"
+
+# Merge the test and train labels, applying the textual labels
+label <- rbind(test.y, train.y)
+label <- merge(label, activity.labels, by=1)[,2]
+
+# Merge the test and train main dataset, applying the textual headings
+data <- rbind(test.x, train.x)
+colnames(data) <- features[, 2]
+
+# Merge all three datasets
+data <- cbind(subject, label, data)
+
+# Create a smaller dataset containing only the mean and std variables
+search <- grep("-mean|-std", colnames(data))
+data.mean.std <- data[,c(1,2,search)]
+
+# Compute the means, grouped by subject/label
+melted = melt(data.mean.std, id.var = c("subject", "label"))
+means = dcast(melted , subject + label ~ variable, mean)
+
+# Save the resulting dataset
+write.table(means, file="./data/tidy_data.txt")
+
+# Output final dataset
+means
+
+## Coursera Test run_analysis.R #2
+
+setwd("D:/Кости/Coursera/Coursera Data Science/3. Getting and Cleaning Data/4W/4. Course Project/1/UCI HAR Dataset/")
+
+# Import the dplyr library
+library(dplyr)
+
+# Read in the X test dataset
+x.test <- read.csv("test/X_test.txt", sep="",
+                   header=FALSE)
+
+# Read in the test labels
+y.test <- read.csv("test/y_test.txt", sep="",
+                   header=FALSE)
+
+# Rest in the test subject dataset
+subject.test <- read.csv("test/subject_test.txt",
+                         sep="", header=FALSE)
+
+# Merge the test datasets into a single dataframe
+test <- data.frame(subject.test, y.test, x.test)
+
+# Read in the X training dataset
+x.train <- read.csv("train/X_train.txt", sep="",
+                    header=FALSE)
+
+# Read in the training labels
+y.train <- read.csv("train/y_train.txt", sep="",
+                    header=FALSE)
+
+# Read in the training subject dataset
+subject.train <- read.csv("train/subject_train.txt",
+                          sep="", header=FALSE)
+
+# Merge test training datasets into a single dataframe
+train <- data.frame(subject.train, y.train, x.train)
+
+# Combine the training and test running datasets
+run.data <- rbind(train, test)
+
+# Remove the files we don't need anymore from
+# the environment.
+remove(subject.test, x.test, y.test, subject.train,
+       x.train, y.train, test, train)
+
+# Read in the measurement labels dataset
+features <- read.csv("features.txt", sep="", header=FALSE)
+# Convert the 2nd column into a vector
+column.names <- as.vector(features[, 2])
+# Apply the measurement labels as column names to the combined
+# running dataset
+colnames(run.data) <- c("subject_id", "activity_labels", column.names)
+
+# Select only the columns that contain mean or standard deviations.
+# Make sure to bring along the subject and label columns.
+# Exclude columns with freq and angle in the name.
+run.data <- select(run.data, contains("subject"), contains("label"),
+                   contains("mean"), contains("std"), -contains("freq"),
+                   -contains("angle"))
+
+# Read in the activity labels dataset
+activity.labels <- read.csv("activity_labels.txt", 
+                            sep="", header=FALSE)
+
+# Replace the activity codes in the trimmed down running
+# dataset with the labels from the activity labels dataset.
+run.data$activity_labels <- as.character(activity.labels[
+        match(run.data$activity_labels, activity.labels$V1), 'V2'])
+
+# Clean up the column names. Remove parantheses and hyphens
+# from column names, both of which are invalid characters in
+# column names. Also fix a set of columns that repeat the
+# word "Body".
+setnames(run.data, colnames(run.data), gsub("\\(\\)", "", colnames(run.data)))
+setnames(run.data, colnames(run.data), gsub("-", "_", colnames(run.data)))
+setnames(run.data, colnames(run.data), gsub("BodyBody", "Body", colnames(run.data)))
+
+# Group the running data by subject and activity, then
+# calculate the mean of every measurement.
+run.data.summary <- run.data %>%
+        group_by(subject_id, activity_labels) %>%
+        summarise_each(funs(mean))
+
+# Write run.data to file
+write.table(run.data.summary, file="run_data_summary.txt", row.name=FALSE)
+
+setwd("D:/Кости/R/Git_R/Test_K2")
 
