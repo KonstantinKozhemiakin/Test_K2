@@ -2472,6 +2472,48 @@ with(airquality, {
         mtext("Ozone and Weather in New York City", outer = TRUE)
 })
 
+
+#Swirl
+
+library(datasets)
+head(pollution)
+dim(pollution)
+pollution$pm25
+summary(pollution$pm25)
+ppm <- pollution$pm25
+quantile(ppm)
+boxplot(ppm,col="blue")
+abline(h=12)
+hist(ppm, col = "green")
+rug(ppm)
+high <- subset(pollution,pm25>10)
+low <- subset(pollution,pm25<5)
+hist(ppm,col = "green", breaks = 100)
+rug(ppm)
+hist(ppm,col = "green")
+abline(v=12,lwd=2)
+abline(v = median(ppm), col = "magenta", lwd = 4)
+names(pollution)
+reg <- pollution$region
+reg <- table(pollution$region);reg
+barplot(reg,col = "wheat",main = "Number of Counties in Each Region")
+
+boxplot(pm25 ~ region, data = pollution, col = "red")
+par(mfrow=c(2,1),mar=c(4,4,2,1))
+east <- subset(pollution,region=="east")
+hist(east$pm25, col = "green")
+hist(subset(pollution,region=="west")$pm25, col = "green")
+
+with(pollution, plot(latitude, pm25))
+abline(h = 12, lwd = 2, lty = 2)
+plot(pollution$latitude, ppm, col = pollution$region)
+abline(h = 12, lwd = 2, lty = 2)
+
+par(mfrow = c(1, 2), mar = c(5, 4, 2, 1))
+west <- subset(pollution,region=="west")
+plot(west$latitude, west$pm25, main = "West")
+plot(east$latitude, east$pm25, main = "East")
+
 ## Graphics Devices
 
 #How Does a Plot Get Created?
@@ -2522,34 +2564,101 @@ title(main = "Old Faithful Geyser data")  ## Add a main title
 dev.copy(png, file = "geyserplot.png")  ## Copy my plot to a PNG file
 dev.off()  ## Don't forget to close the PNG device!
 
+## Course Project
+
+#reading data from file
+setwd("D:/Êîñòè/Coursera/Coursera Data Science/4. Exploratory Data Analysis/W1/7. Course Project 1/1")
+mydata<-read.csv("household_power_consumption.txt",stringsAsFactors=FALSE,sep=";")
+##good<-as.Date(mydata[,1],"%d/%m/%Y")>=as.Date("2007/02/01","%Y/%m/%d") && as.Date(mydata[,1],"%d/%m/%Y")<=as.Date("2007/02/02","%Y/%m/%d")
+good<-as.Date(mydata$Date,"%d/%m/%Y") %in% c(as.Date("01/02/2007","%d/%m/%Y"),as.Date("02/02/2007","%d/%m/%Y"))
+mydata1<-mydata[good,]
+
+#using mydata1 which is filtered 2 day data see main.R for code
+hist(as.numeric(mydata1$Global_active_power),breaks=6,col="red",main="Global Active Power", xlab="Global Active Power(kilowatts")
+dev.copy(png,"plot1.png")
+dev.off()
+
+#using mydata1 which is filtered 2 day data see main.R for code
+plot(as.numeric(mydata1$Global_active_power),main="Global Active Power",type="l", ylab="Global Active Power(kilowatts)",xlab="",axes=FALSE)
+axis(1, at = c(0,1500,2900),labels = c("Thu","Fri","Sat"))
+axis(2,at=c(0,2,4,6))
+box(lty = 1, col = 'black')
+dev.copy(png,"plot2.png")
+dev.off()
 
 
+#using mydata1 which is filtered 2 day data see main.R for code
+plot(1:nrow(mydata1),as.numeric(mydata1$Sub_metering_1),main="", ylab="Energy sub metering",xlab="",type="l",col="black",axes=FALSE)
+par(new=T)
+plot(as.numeric(mydata1$Sub_metering_2),col="red",type="l",axes=FALSE,ylim=c(0,40),xlab="",ylab="")
+par(new=T)
+plot(as.numeric(mydata1$Sub_metering_3),col="blue",type="l",axes=FALSE,ylim=c(0,40),xlab="",ylab="")
+axis(1, at = c(0,1500,2900),labels = c("Thu","Fri","Sat"))
+axis(2, at = c(0,10,20,30),labels = c("0","10","20","30"))
+legend("topright",legend=c("sub-metering1","sub-metering2","sub-metering3"),col=c("black","red","blue"),lty=c(1,1,1),lwd=2)
+box(lty = 1, col = 'black')
+dev.copy(png,"plot3.png")
+dev.off()
 
+#using mydata1 which is filtered 2 day data see main.R for code
+par(new=F)
+par(mfrow=c(2,2))
+plot(as.numeric(mydata1$Global_active_power),main ="Global Active Power",type="l", ylab="Global Active Power(kilowatts)",xlab="",axes=FALSE)
+axis(1, at = c(0,1500,2900),labels = c("Thu","Fri","Sat"))
+axis(2,at=c(0,2,4,6))
+box(lty = 1, col = 'black')
+#voltage
+plot(as.numeric(mydata1$Voltage),main="voltage",type="l", ylab="voltage",xlab="",axes=FALSE)
+axis(1, at = c(0,1500,2900),labels = c("Thu","Fri","Sat"))
+axis(2,at=c(234,238,240,242),labels=c("234","238","240","242"))
+box(lty = 1, col = 'black')
+#plot3
+plot(1:nrow(mydata1),as.numeric(mydata1$Sub_metering_1),main="Energy metering", ylab="Energy sub metering",xlab="",type="l",col="black",axes=FALSE)
+par(new=T)
+plot(as.numeric(mydata1$Sub_metering_2),col="red",type="l",axes=FALSE,ylim=c(0,40),xlab="",ylab="")
+par(new=T)
+plot(as.numeric(mydata1$Sub_metering_3),col="blue",type="l",axes=FALSE,ylim=c(0,40),xlab="",ylab="")
+axis(1, at = c(0,1500,2900),labels = c("Thu","Fri","Sat"))
+axis(2, at = c(0,10,20,30),labels = c("0","10","20","30"))
+legend("topright",legend=c("sub-metering1","sub-metering2","sub-metering3"),col=c("black","red","blue"),lty=c(1,1,1),lwd=2)
+box(lty = 1, col = 'black')
+par(new=F)
+plot(as.numeric(mydata1$Global_reactive_power),main ="Global Reactive Power",type="l", ylab="",xlab="",axes=FALSE)
+axis(1, at = c(0,1500,2900),labels = c("Thu","Fri","Sat"))
+axis(2,at=c(0.1,0.2,0.3,0.4),c("0.1","0.2","0.3","0.4"))
+box(lty = 1, col = 'black')
+dev.copy(png,"plot4.png")
+dev.off()
 
+## Mathematical Annotation
 
+#Some examples.
 
+plot(0, 0, main = expression(theta == 0),
+     ylab = expression(hat(gamma) == 0),
+     xlab = expression(sum(x[i] * y[i], i==1, n)))
+#Pasting strings together.
 
+x <- rnorm(100)
+hist(x,
+     xlab=expression("The mean (" * bar(x) * ") is " *
+                             sum(x[i]/n,i==1,n)))
 
+#Substituting
+#What if you want to use a computed value in the annotation?
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+x <- rnorm(100)
+y <- x + rnorm(100, sd = 0.5)
+plot(x, y,
+     xlab=substitute(bar(x) == k, list(k=mean(x))),
+     ylab=substitute(bar(y) == k, list(k=mean(y)))
+)
+#Or in a loop of plots
+par(mfrow = c(2, 2))
+for(i in 1:4) {
+        x <- rnorm(100)
+        hist(x, main=substitute(theta==num,list(num=i)))
+}
 
 
 ## The Lattice Plotting System
@@ -2606,6 +2715,52 @@ xyplot(y ~ x | f, panel = function(x, y, ...) {
 
 ## ggplot2
 
+library(ggplot2)
+
+#Basic Plot
+str(mpg)
+qplot(displ, hwy, data = mpg)
+
+#Modifying aesthetics
+qplot(displ, hwy, data = mpg, color = drv)
+
+#Adding a geom
+qplot(displ, hwy, data = mpg, geom = c("point", "smooth"))
+
+#Histograms
+qplot(hwy, data = mpg, fill = drv)
+
+#Facets
+qplot(displ, hwy, data = mpg, facets = . ~ drv)
+qplot(hwy, data = mpg, facets = drv ~ ., binwidth = 2)
+
+##
+str(maacs)
+head(maacs)
+
+#Histogram of eNO
+qplot(log(eno), data = maacs)
+
+#Histogram by Group
+qplot(log(eno), data = maacs, fill = mopos)
+
+#Density Smooth
+qplot(log(eno), data = maacs, geom = "density")
+qplot(log(eno), data = maacs, geom = "density", color = mopos)
+
+#Scatterplots: eNO vs. PM$_{2.5}$
+qplot(log(pm25), log(eno), data = maacs)
+qplot(log(pm25), log(eno), data = maacs, shape = mopos)
+qplot(log(pm25), log(eno), data = maacs, color = mopos)
+
+#Scatterplots: eNO vs. PM$_{2.5}$
+qplot(log(pm25), log(eno), data = maacs, color = mopos, 
+      geom = c("point", "smooth"), method = "lm")
+
+#Scatterplots: eNO vs. PM$_{2.5}$
+qplot(log(pm25), log(eno), data = maacs, geom = c("point", "smooth"), 
+      method = "lm", facets = . ~ mopos)
+
 #Basic Plot
 library(ggplot2)
 qplot(logpm25, NocturnalSympt, data = maacs, facets = . ~ bmicat, 
@@ -2613,10 +2768,9 @@ qplot(logpm25, NocturnalSympt, data = maacs, facets = . ~ bmicat,
 
 #Building Up in Layers
 head(maacs)
-
 g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
 summary(g)
-        
+
 #No Plot Yet!
 g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
 print(g)
@@ -2631,15 +2785,6 @@ g + geom_point() + geom_smooth(method = "lm")
 
 #Adding More Layers: Facets
 g + geom_point() + facet_grid(. ~ bmicat) + geom_smooth(method = "lm")
-
-#Annotation
-#Labels: xlab(), ylab(), labs(), ggtitle()
-#Each of the “geom” functions has options to modify
-#For things that only make sense globally, use theme()
-#Example: theme(legend.position = "none")
-#Two standard appearance themes are included
-#theme_gray(): The default theme (gray background)
-#theme_bw(): More stark/plain
 
 #Modifying Aesthetics
 g + geom_point(color = "steelblue", size = 4, alpha = 1/2)
@@ -2690,38 +2835,4 @@ g + geom_point(alpha = 1/3) +
         labs(x = expression("log " * PM[2.5])) + 
         labs(y = "Nocturnal Symptoms") + 
         labs(title = "MAACS Cohort")
-
-
-## Mathematical Annotation
-
-#Some examples.
-
-plot(0, 0, main = expression(theta == 0),
-     ylab = expression(hat(gamma) == 0),
-     xlab = expression(sum(x[i] * y[i], i==1, n)))
-#Pasting strings together.
-
-x <- rnorm(100)
-hist(x,
-     xlab=expression("The mean (" * bar(x) * ") is " *
-                             sum(x[i]/n,i==1,n)))
-
-#Substituting
-#What if you want to use a computed value in the annotation?
-
-x <- rnorm(100)
-y <- x + rnorm(100, sd = 0.5)
-plot(x, y,
-     xlab=substitute(bar(x) == k, list(k=mean(x))),
-     ylab=substitute(bar(y) == k, list(k=mean(y)))
-)
-#Or in a loop of plots
-
-par(mfrow = c(2, 2))
-for(i in 1:4) {
-        x <- rnorm(100)
-        hist(x, main=substitute(theta==num,list(num=i)))
-}
-
-
 
