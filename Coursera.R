@@ -2204,7 +2204,7 @@ wday(x[1],label=TRUE)
 
 ## Coursera Test run_analysis.R #1
 setwd("D:/Êîñòè/Coursera/Coursera Data Science/3. Getting and Cleaning Data/4W/4. Course Project/1/UCI HAR Dataset/")
-library(reshape2)
+library(??reshape2)
 
 # Load the various datasets
 test.subject <- read.table("./test/subject_test.txt")
@@ -2334,4 +2334,394 @@ run.data.summary <- run.data %>%
 write.table(run.data.summary, file="run_data_summary.txt", row.name=FALSE)
 
 setwd("D:/Êîñòè/R/Git_R/Test_K2")
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+## Exploratory Data Analysis
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+## Graphs
+
+#Boxplot
+boxplot(pollution$pm25, col = "blue")
+
+#Histogram
+hist(pollution$pm25, col = "green")
+rug(pollution$pm25)
+
+hist(pollution$pm25, col = "green", breaks = 100)
+rug(pollution$pm25)
+
+#Overlaying Features
+boxplot(pollution$pm25, col = "blue")
+abline(h = 12)
+
+hist(pollution$pm25, col = "green")
+abline(v = 12, lwd = 2)
+abline(v = median(pollution$pm25), col = "magenta", lwd = 4)
+
+#Barplot
+barplot(table(pollution$region), col = "wheat", main = "Number of Counties in Each Region")
+
+#Multiple Boxplots
+boxplot(pm25 ~ region, data = pollution, col = "red")
+
+#Multiple Histograms
+par(mfrow = c(2, 1), mar = c(4, 4, 2, 1))
+hist(subset(pollution, region == "east")$pm25, col = "green")
+hist(subset(pollution, region == "west")$pm25, col = "green")
+
+#Scatterplot
+with(pollution, plot(latitude, pm25))
+abline(h = 12, lwd = 2, lty = 2)
+
+#Scatterplot - Using Color
+with(pollution, plot(latitude, pm25, col = region))
+abline(h = 12, lwd = 2, lty = 2)
+
+#Multiple Scatterplots
+par(mfrow = c(1, 2), mar = c(5, 4, 2, 1))
+with(subset(pollution, region == "west"), plot(latitude, pm25, main = "West"))
+with(subset(pollution, region == "east"), plot(latitude, pm25, main = "East"))
+
+## Plotting Base
+
+#Simple Base Graphics: Histogram
+library(datasets)
+hist(airquality$Ozone) 
+
+#Simple Base Graphics: Scatterplot
+library(datasets)
+with(airquality, plot(Wind, Ozone))
+
+#Simple Base Graphics: Boxplot
+library(datasets)
+airquality <- transform(airquality, Month = factor(Month))
+boxplot(Ozone ~ Month, airquality, xlab = "Month", ylab = "Ozone (ppb)")
+
+#Some Important Base Graphics Parameters
+#Many base plotting functions share a set of parameters. Here are a few key ones:
+#pch: the plotting symbol (default is open circle)
+#lty: the line type (default is solid line), can be dashed, dotted, etc.
+#lwd: the line width, specified as an integer multiple
+#col: the plotting color, specified as a number, string, or hex code; the colors() function gives you a vector of colors by name
+#xlab: character string for the x-axis label
+#ylab: character string for the y-axis label
+
+#Some Important Base Graphics Parameters
+#The par() function is used to specify global graphics parameters that affect all plots in an R session. These parameters can be overridden when specified as arguments to specific plotting functions.
+#las: the orientation of the axis labels on the plot
+#bg: the background color
+#mar: the margin size
+#oma: the outer margin size (default is 0 for all sides)
+#mfrow: number of plots per row, column (plots are filled row-wise)
+#mfcol: number of plots per row, column (plots are filled column-wise)
+
+#Some Important Base Graphics Parameters
+#The par() function is used to specify global graphics parameters that affect all plots in an R session. These parameters can be overridden when specified as arguments to specific plotting functions.
+#las: the orientation of the axis labels on the plot
+#bg: the background color
+#mar: the margin size
+#oma: the outer margin size (default is 0 for all sides)
+#mfrow: number of plots per row, column (plots are filled row-wise)
+#mfcol: number of plots per row, column (plots are filled column-wise)
+
+#Base Plotting Functions
+#plot: make a scatterplot, or other type of plot depending on the class of the object being plotted
+#lines: add lines to a plot, given a vector x values and a corresponding vector of y values (or a 2-column matrix); this function just connects the dots
+#points: add points to a plot
+#text: add text labels to a plot using specified x, y coordinates
+#title: add annotations to x, y axis labels, title, subtitle, outer margin
+#mtext: add arbitrary text to the margins (inner or outer) of the plot
+#axis: adding axis ticks/labels
+
+#Base Plot with Annotation
+library(datasets)
+with(airquality, plot(Wind, Ozone))
+title(main = "Ozone and Wind in New York City")  ## Add a title
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City"))
+with(subset(airquality, Month == 5), points(Wind, Ozone, col = "blue"))
+
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City", 
+                      type = "n"))
+with(subset(airquality, Month == 5), points(Wind, Ozone, col = "blue"))
+with(subset(airquality, Month != 5), points(Wind, Ozone, col = "red"))
+legend("topright", pch = 1, col = c("blue", "red"), legend = c("May", "Other Months"))
+
+#Base Plot with Regression Line
+with(airquality, plot(Wind, Ozone, main = "Ozone and Wind in New York City", 
+                      pch = 20))
+model <- lm(Ozone ~ Wind, airquality)
+abline(model, lwd = 2)
+
+#Multiple Base Plots
+par(mfrow = c(1, 2))
+with(airquality, {
+        plot(Wind, Ozone, main = "Ozone and Wind")
+        plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+})
+
+#Multiple Base Plots
+par(mfrow = c(1, 3), mar = c(4, 4, 2, 1), oma = c(0, 0, 2, 0))
+with(airquality, {
+        plot(Wind, Ozone, main = "Ozone and Wind")
+        plot(Solar.R, Ozone, main = "Ozone and Solar Radiation")
+        plot(Temp, Ozone, main = "Ozone and Temperature")
+        mtext("Ozone and Weather in New York City", outer = TRUE)
+})
+
+## Graphics Devices
+
+#How Does a Plot Get Created?
+library(datasets)
+with(faithful, plot(eruptions, waiting))  ## Make plot appear on screen device
+title(main = "Old Faithful Geyser data")  ## Annotate with a title
+
+pdf(file = "myplot.pdf")  ## Open PDF device; create 'myplot.pdf' in my working directory
+## Create plot and send to a file (no plot appears on screen)
+with(faithful, plot(eruptions, waiting))
+title(main = "Old Faithful Geyser data")  ## Annotate plot; still nothing on screen
+dev.off()  ## Close the PDF file device
+## Now you can view the file 'myplot.pdf' on your computer
+
+#Graphics File Devices
+
+#There are two basic types of file devices: vector and bitmap devices
+
+#Vector formats:
+#pdf: useful for line-type graphics, resizes well, usually portable, not efficient if a plot has many objects/points
+#svg: XML-based scalable vector graphics; supports animation and interactivity, potentially useful for web-based plots
+#win.metafile: Windows metafile format (only on Windows)
+#postscript: older format, also resizes well, usually portable, can be used to create encapsulated postscript files; Windows systems often don’t have a postscript viewer
+
+#Bitmap formats
+#png: bitmapped format, good for line drawings or images with solid colors, uses lossless compression (like the old GIF format), most web browsers can read this format natively, good for plotting many many many points, does not resize well
+#jpeg: good for photographs or natural scenes, uses lossy compression, good for plotting many many many points, does not resize well, can be read by almost any computer and any web browser, not great for line drawings
+#tiff: Creates bitmap files in the TIFF format; supports lossless compression
+#bmp: a native Windows bitmapped format
+
+#Multiple Open Graphics Devices
+#It is possible to open multiple graphics devices (screen, file, or both), for example when viewing multiple plots at once
+#Plotting can only occur on one graphics device at a time
+#The currently active graphics device can be found by calling dev.cur()
+#Every open graphics device is assigned an integer $\geq 2$.
+#You can change the active graphics device with dev.set(<integer>) where <integer> is the number associated with the graphics device you want to switch to
+
+#Copying Plots
+#Copying a plot to another device can be useful because some plots require a lot of code and it can be a pain to type all that in again for a different device.
+#dev.copy: copy a plot from one device to another
+#dev.copy2pdf: specifically copy a plot to a PDF file
+
+#NOTE: Copying a plot is not an exact operation, so the result may not be identical to the original.
+
+library(datasets)
+with(faithful, plot(eruptions, waiting))  ## Create plot on screen device
+title(main = "Old Faithful Geyser data")  ## Add a main title
+dev.copy(png, file = "geyserplot.png")  ## Copy my plot to a PNG file
+dev.off()  ## Don't forget to close the PNG device!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## The Lattice Plotting System
+
+#Lattice Functions
+#xyplot: this is the main function for creating scatterplots
+#bwplot: box-and-whiskers plots (“boxplots”)
+#histogram: histograms
+#stripplot: like a boxplot but with actual points
+#dotplot: plot dots on "violin strings"
+#splom: scatterplot matrix; like pairs in base plotting system
+#levelplot, contourplot: for plotting "image" data
+
+#Simple Lattice Plot
+library(lattice)
+library(datasets)
+## Simple scatterplot
+xyplot(Ozone ~ Wind, data = airquality)
+
+#Simple Lattice Plot
+library(datasets)
+library(lattice)
+## Convert 'Month' to a factor variable
+airquality <- transform(airquality, Month = factor(Month))
+xyplot(Ozone ~ Wind | Month, data = airquality, layout = c(5, 1))
+
+#Lattice Behavior
+p <- xyplot(Ozone ~ Wind, data = airquality)  ## Nothing happens!
+print(p)  ## Plot appears
+
+xyplot(Ozone ~ Wind, data = airquality)  ## Auto-printing
+
+#Lattice Panel Functions
+set.seed(10)
+x <- rnorm(100)
+f <- rep(0:1, each = 50)
+y <- x + f - f * x + rnorm(100, sd = 0.5)
+f <- factor(f, labels = c("Group 1", "Group 2"))
+xyplot(y ~ x | f, layout = c(2, 1))  ## Plot with 2 panels
+
+#Lattice Panel Functions
+## Custom panel function
+xyplot(y ~ x | f, panel = function(x, y, ...) {
+        panel.xyplot(x, y, ...)  ## First call the default panel function for 'xyplot'
+        panel.abline(h = median(y), lty = 2)  ## Add a horizontal line at the median
+})
+
+#Lattice Panel Functions: Regression line
+## Custom panel function
+xyplot(y ~ x | f, panel = function(x, y, ...) {
+        panel.xyplot(x, y, ...)  ## First call default panel function
+        panel.lmline(x, y, col = 2)  ## Overlay a simple linear regression line
+})
+
+## ggplot2
+
+#Basic Plot
+library(ggplot2)
+qplot(logpm25, NocturnalSympt, data = maacs, facets = . ~ bmicat, 
+      geom = c("point", "smooth"), method = "lm")
+
+#Building Up in Layers
+head(maacs)
+
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+summary(g)
+        
+#No Plot Yet!
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+print(g)
+
+#First Plot with Point Layer
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+g + geom_point()
+
+#Adding More Layers: Smooth
+g + geom_point() + geom_smooth()
+g + geom_point() + geom_smooth(method = "lm")
+
+#Adding More Layers: Facets
+g + geom_point() + facet_grid(. ~ bmicat) + geom_smooth(method = "lm")
+
+#Annotation
+#Labels: xlab(), ylab(), labs(), ggtitle()
+#Each of the “geom” functions has options to modify
+#For things that only make sense globally, use theme()
+#Example: theme(legend.position = "none")
+#Two standard appearance themes are included
+#theme_gray(): The default theme (gray background)
+#theme_bw(): More stark/plain
+
+#Modifying Aesthetics
+g + geom_point(color = "steelblue", size = 4, alpha = 1/2)
+g + geom_point(aes(color = bmicat), size = 4, alpha = 1/2)
+
+#Modifying Labels
+g + geom_point(aes(color = bmicat)) + labs(title = "MAACS Cohort") + 
+        labs(x = expression("log " * PM[2.5]), y = "Nocturnal Symptoms")
+
+#Customizing the Smooth
+g + geom_point(aes(color = bmicat), size = 2, alpha = 1/2) + 
+        geom_smooth(size = 4, linetype = 3, method = "lm", se = FALSE)
+
+#Changing the Theme
+g + geom_point(aes(color = bmicat)) + theme_bw(base_family = "Times")
+
+#A Note about Axis Limits
+testdat <- data.frame(x = 1:100, y = rnorm(100))
+testdat[50,2] <- 100  ## Outlier!
+plot(testdat$x, testdat$y, type = "l", ylim = c(-3,3))
+
+g <- ggplot(testdat, aes(x = x, y = y))
+g + geom_line()
+
+#Axis Limits
+g + geom_line() + ylim(-3, 3)
+g + geom_line() + coord_cartesian(ylim = c(-3, 3))
+
+#Making NO$_2$ Tertiles
+## Calculate the tertiles of the data
+cutpoints <- quantile(maacs$logno2_new, seq(0, 1, length = 4), na.rm = TRUE)
+
+## Cut the data at the tertiles and create a new factor variable
+maacs$no2tert <- cut(maacs$logno2_new, cutpoints)
+
+## See the levels of the newly created factor variable
+levels(maacs$no2tert)
+
+#Code for Final Plot
+## Setup ggplot with data frame
+g <- ggplot(maacs, aes(logpm25, NocturnalSympt))
+
+## Add layers
+g + geom_point(alpha = 1/3) + 
+        facet_wrap(bmicat ~ no2tert, nrow = 2, ncol = 4) + 
+        geom_smooth(method="lm", se=FALSE, col="steelblue") + 
+        theme_bw(base_family = "Avenir", base_size = 10) + 
+        labs(x = expression("log " * PM[2.5])) + 
+        labs(y = "Nocturnal Symptoms") + 
+        labs(title = "MAACS Cohort")
+
+
+## Mathematical Annotation
+
+#Some examples.
+
+plot(0, 0, main = expression(theta == 0),
+     ylab = expression(hat(gamma) == 0),
+     xlab = expression(sum(x[i] * y[i], i==1, n)))
+#Pasting strings together.
+
+x <- rnorm(100)
+hist(x,
+     xlab=expression("The mean (" * bar(x) * ") is " *
+                             sum(x[i]/n,i==1,n)))
+
+#Substituting
+#What if you want to use a computed value in the annotation?
+
+x <- rnorm(100)
+y <- x + rnorm(100, sd = 0.5)
+plot(x, y,
+     xlab=substitute(bar(x) == k, list(k=mean(x))),
+     ylab=substitute(bar(y) == k, list(k=mean(y)))
+)
+#Or in a loop of plots
+
+par(mfrow = c(2, 2))
+for(i in 1:4) {
+        x <- rnorm(100)
+        hist(x, main=substitute(theta==num,list(num=i)))
+}
+
+
 
