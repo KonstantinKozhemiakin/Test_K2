@@ -2473,7 +2473,7 @@ with(airquality, {
 })
 
 
-#Swirl
+#Swirl Base plotting
 
 library(datasets)
 head(pollution)
@@ -2735,7 +2735,9 @@ qplot(displ, hwy, data = mpg, facets = . ~ drv)
 qplot(hwy, data = mpg, facets = drv ~ ., binwidth = 2)
 
 ##
+maacs <- readRDS("D:/Кости/R/Git_R/Test_K2/data/maacs_env.rds")
 str(maacs)
+summary(maacs)
 head(maacs)
 
 #Histogram of eNO
@@ -2835,4 +2837,151 @@ g + geom_point(alpha = 1/3) +
         labs(x = expression("log " * PM[2.5])) + 
         labs(y = "Nocturnal Symptoms") + 
         labs(title = "MAACS Cohort")
+
+
+# Swirl Lattice 
+
+xyplot(Ozone ~ Wind, data = airquality)
+xyplot(Ozone ~ Wind, data = airquality, pch=8, col="red", main="Big Apple Data")
+xyplot(Ozone ~ Wind | as.factor(Month), data = airquality, layout=c(5,1))
+xyplot(Ozone ~ Wind | Month, data = airquality, layout=c(5,1))
+xyplot(Ozone~Wind,data=airquality)
+p <- xyplot(Ozone~Wind,data=airquality)
+mynames <- names(p)
+myfull <- !is.na()
+mynames[myfull]
+p[["formula"]]
+p[["x.limits"]]
+
+#f <- table("Group 1" = rnorm(50),"Group 1" = rnorm(50))) ?????
+xyplot(y~x|f,layout = c(2,1))
+
+p <- xyplot(y ~ x | f, panel = function(x, y, ...) {
+        panel.xyplot(x, y, ...)  ## First call the default panel function for 'xyplot'
+        panel.abline(h = median(y), lty = 2)  ## Add a horizontal line at the median
+})
+print(p)
+invisible()
+
+source(pathtofile("plot1.R"),local=TRUE)
+
+p2 <- xyplot(y ~ x | f, panel = function(x, y, ...) {
+        panel.xyplot(x, y, ...)  ## First call default panel function
+        panel.lmline(x, y, col = 2)  ## Overlay a simple linear regression line
+})
+print(p2)
+invisible()
+
+source(pathtofile("plot2.R"),local=TRUE)
+
+table(diamonds$color)
+table(diamonds$color,diamonds$cut)
+myxlab <- "Carat"
+myylab <- "Price"
+mymain <- "Diamonds are Sparkly!"
+xyplot(price~carat|color*cut,data=diamonds,strip=FALSE,pch=20,xlab=myxlab,ylab=myylab,main=mymain)
+xyplot(price~carat|color*cut,data=diamonds,pch=20,xlab=myxlab,ylab=myylab,main=mymain)
+
+# Colors
+sample(colors(),10)
+#grDevices package
+pal <- colorRamp(c("red","blue"))
+pal(0)
+pal(1)
+pal(.5)
+pal(seq(0,1,len=6))
+p1 <- colorRampPalette(c("red","blue"))
+p1(2)
+p1(6) #equal pal(seq(0,1,len=6))
+p2 <- colorRampPalette(c("red","yellow"))
+p2(2)
+
+function (n) 
+{
+        x <- ramp(seq.int(0, 1, length.out = n))
+        if (ncol(x) == 4L) 
+                rgb(x[, 1L], x[, 2L], x[, 3L], x[, 4L], maxColorValue = 255)
+        else rgb(x[, 1L], x[, 2L], x[, 3L], maxColorValue = 255)
+}
+
+p3 <- colorRampPalette(c("blue","green"),alpha=.5)
+plot(x,y,pch=19,col=rgb(0,.5,.5))
+plot(x,y,pch=19,col=rgb(0,.5,.5,.3))
+
+#RColorBrewer Package
+cols <- brewer.pal(3, "BuGn")
+showMe (cols)
+pal <- colorRampPalette(cols)
+showMe(pal(20))
+image(volcano, col = pal(20))
+image(volcano, col = p1(20))
+
+# Swirl GGPlot
+
+#These components include aesthetics which are attributes such as colour, 
+#shape, and size, and geometric objects or geoms such as points, lines, and bars.
+
+qplot(displ, hwy, data = mpg)
+qplot(displ, hwy, data = mpg, color = drv)
+qplot(displ, hwy, data = mpg, color=drv, geom = c("point", "smooth"))
+qplot(y=hwy, data = mpg, color = drv)
+qplot(drv,hwy,data=mpg,geom="boxplot")
+qplot(drv,hwy,data=mpg,geom="boxplot",color=manufacturer)
+qplot(hwy, data = mpg, fill = drv)
+qplot(displ, hwy, data = mpg, facets = . ~ drv)
+qplot(hwy, data = mpg, facets = drv ~ ., binwidth = 2)
+
+#The AESTHETIC MAPPINGS determine how data are mapped to color, size, etc. 
+#The GEOMS (geometric objects) are what you see in the plot (points, lines, shapes) 
+#The FACETS are the panels used in conditional plots. 
+
+qplot(displ, hwy, data = mpg, geom=c("point", "smooth"),facets=.~drv)
+g <- ggplot(mpg,aes(displ,hwy))
+summary(g)
+g+geom_point()
+g+geom_point()+geom_smooth()
+g+geom_point()+geom_smooth(method="lm")
+g+geom_point()+geom_smooth(method="lm") + facet_grid(.~drv)
+g+geom_point()+geom_smooth(method="lm") + facet_grid(.~drv)+ ggtitle("Swirl Rules!")
+g+geom_point(color="pink",size=4,alpha=1/2)
+g + geom_point(aes(color = drv), size = 4, alpha = 1/2)
+g + geom_point(aes(color = drv)) + labs(title="Swirl Rules!") + labs(x="Displacement", y="Hwy Mileage")
+g + geom_point(aes(color = drv),size=2,alpha=1/2) + geom_smooth(size=4,linetype=3,method="lm",se=FALSE)
+g + geom_point(aes(color = drv)) + theme_bw(base_family="Times")
+plot(myx, myy, type = "l", ylim = c(-3,3))
+g <- ggplot(testdat, aes(x = myx, y = myy))
+g + geom_line()
+g + geom_line() + ylim(-3,3)
+g + geom_line() + coord_cartesian(ylim=c(-3,3))
+g <- ggplot(mpg,aes(x=displ,y=hwy,color=factor(year)))
+g #R would return an error in red
+g + geom_point()
+g + geom_point() + facet_grid(drv~cyl,margins=TRUE)
+g + geom_point() + facet_grid(drv~cyl,margins=TRUE)+geom_smooth(method="lm",size=2,se=FALSE,color="black")
+g + geom_point() + facet_grid(drv~cyl,margins=TRUE)+geom_smooth(method="lm",size=2,se=FALSE,color="black")+labs(x="Displacement",y="Highway Mileage",title="Swirl Rules!")
+
+str(diamonds)
+qplot(price,data=diamonds)
+range(diamonds$price)
+qplot(price,data=diamonds,binwidth=18497/30)
+qplot(price,data=diamonds,binwidth=18497/30,fill=cut)
+qplot(price,data=diamonds,geom="density")
+qplot(price,data=diamonds,geom="density",color=cut)
+qplot(carat,price,data=diamonds)
+qplot(carat,price,data=diamonds, shape=cut)
+qplot(carat,price,data=diamonds, color=cut)
+qplot(carat,price,data=diamonds, color=cut) + geom_smooth(method="lm")
+qplot(carat,price,data=diamonds, color=cut, facets=.~cut) + geom_smooth(method="lm")
+g <- ggplot(diamonds,aes(depth,price))
+g+geom_point(alpha=1/3)
+cutpoints <- quantile(diamonds$carat,seq(0,1,length=4),na.rm=TRUE)
+diamonds$car2 <- cut(diamonds$carat,cutpoints); stageVariable("diamonds$car2",diamonds$car2)
+g <- ggplot(diamonds,aes(depth,price))
+g+geom_point(alpha=1/3)+facet_grid(cut~car2)
+diamonds[myd,]
+g+geom_point(alpha=1/3)+facet_grid(cut~car2)+geom_smooth(method="lm",size=3,color="pink")
+ggplot(diamonds,aes(carat,price))+geom_boxplot()+facet_grid(.~cut)
+
+
+
 
