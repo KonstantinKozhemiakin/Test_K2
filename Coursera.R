@@ -2975,12 +2975,335 @@ qplot(carat,price,data=diamonds, color=cut, facets=.~cut) + geom_smooth(method="
 g <- ggplot(diamonds,aes(depth,price))
 g+geom_point(alpha=1/3)
 cutpoints <- quantile(diamonds$carat,seq(0,1,length=4),na.rm=TRUE)
-diamonds$car2 <- cut(diamonds$carat,cutpoints); stageVariable("diamonds$car2",diamonds$car2)
+diamonds$car2 <- cut(diamonds$carat,cutpoints) #?????? stageVariable("diamonds$car2",diamonds$car2)
 g <- ggplot(diamonds,aes(depth,price))
 g+geom_point(alpha=1/3)+facet_grid(cut~car2)
 diamonds[myd,]
 g+geom_point(alpha=1/3)+facet_grid(cut~car2)+geom_smooth(method="lm",size=3,color="pink")
 ggplot(diamonds,aes(carat,price))+geom_boxplot()+facet_grid(.~cut)
+
+
+##Hierarchical Clustering
+
+#
+set.seed(1234)
+par(mar = c(0, 0, 0, 0))
+x <- rnorm(12, mean = rep(1:3, each = 4), sd = 0.2)
+y <- rnorm(12, mean = rep(c(1, 2, 1), each = 4), sd = 0.2)
+plot(x, y, col = "blue", pch = 19, cex = 2)
+text(x + 0.05, y + 0.05, labels = as.character(1:12))
+dataFrame <- data.frame(x, y)
+dist(dataFrame)
+
+#Clustetring example
+myplclust <- function( hclust, lab=hclust$labels, lab.col=rep(1,length(hclust$labels)), hang=0.1,...){
+        ## modifiction of plclust for plotting hclust objects *in colour*!
+        ## Copyright Eva KF Chan 2009
+        ## Arguments:
+        ##    hclust:    hclust object
+        ##    lab:        a character vector of labels of the leaves of the tree
+        ##    lab.col:    colour for the labels; NA=default device foreground colour
+        ##    hang:     as in hclust & plclust
+        ## Side effect:
+        ##    A display of hierarchical cluster with coloured leaf labels.
+        y <- rep(hclust$height,2)
+        x <- as.numeric(hclust$merge)
+        y <- y[which(x<0)]
+        x <- x[which(x<0)]
+        x <- abs(x)
+        y <- y[order(x)]
+        x <- x[order(x)]
+        plot( hclust, labels=FALSE, hang=hang, ... )
+        text( x=x, y=y[hclust$order]-(max(hclust$height)*hang), labels=lab[hclust$order], col=lab.col[hclust$order], srt=90, adj=c(1,0.5), xpd=NA, ... )}
+
+#Pretty dendrograms
+dataFrame <- data.frame(x=x,y=y)
+distxy <- dist(dataFrame)
+hClastering <- hclust(distxy)
+myplclust(hClastering,lab = rep(1:3,each = 4),lab.col = rep(1:3, each = 4))
+
+#Heatmap
+dataFrame <- data.frame(x=x,y=y)
+set.seed(143)
+dataMatrix <- as.matrix(dataFrame)[sample(1:12),]
+heatmap(dataMatrix)
+
+#K-means clustering - example
+set.seed(1234)
+par(mar = c(0, 0, 0, 0))
+x <- rnorm(12, mean = rep(1:3, each = 4), sd = 0.2)
+y <- rnorm(12, mean = rep(c(1, 2, 1), each = 4), sd = 0.2)
+plot(x, y, col = "blue", pch = 19, cex = 2)
+text(x + 0.05, y + 0.05, labels = as.character(1:12))
+
+#kmeans()
+#Important parameters: x, centers, iter.max, nstart
+dataFrame <- data.frame(x, y)
+dist(dataFrame)
+kmeansObj <- kmeans(dataFrame, centers = 3)
+names(kmeansObj)
+kmeansObj$cluster
+
+par(mar = rep(0.2, 4))
+plot(x, y, col = kmeansObj$cluster, pch = 19, cex = 2)
+points(kmeansObj$centers, col = 1:3, pch = 3, cex = 3, lwd = 3)
+
+#Heatmaps
+set.seed(1234)
+dataMatrix <- as.matrix(dataFrame)[sample(1:12), ]
+kmeansObj2 <- kmeans(dataMatrix, centers = 3)
+par(mfrow = c(1, 2), mar = c(2, 4, 0.1, 0.1))
+image(t(dataMatrix)[, nrow(dataMatrix):1], yaxt = "n")
+image(t(dataMatrix)[, order(kmeansObj$cluster)], yaxt = "n")
+
+##dimension Reduction
+
+#Matrix data
+set.seed(12345)
+par(mar = rep(0.2, 4))
+dataMatrix <- matrix(rnorm(400), nrow = 40)
+image(1:10, 1:40, t(dataMatrix)[, nrow(dataMatrix):1])
+
+#Cluster the data
+par(mar = rep(0.2, 4))
+heatmap(dataMatrix)
+
+#What if we add a pattern?
+set.seed(678910)
+for (i in 1:40) {
+        # flip a coin
+        coinFlip <- rbinom(1, size = 1, prob = 0.5)
+        # if coin is heads add a common pattern to that row
+        if (coinFlip) {
+                dataMatrix[i, ] <- dataMatrix[i, ] + rep(c(0, 3), each = 5)
+        }
+}
+
+#What if we add a pattern? - the data
+par(mar = rep(0.2, 4))
+image(1:10, 1:40, t(dataMatrix)[, nrow(dataMatrix):1])
+
+#What if we add a pattern? - the clustered data
+par(mar = rep(0.2, 4))
+heatmap(dataMatrix)
+
+#Patterns in rows and columns
+hh <- hclust(dist(dataMatrix))
+dataMatrixOrdered <- dataMatrix[hh$order, ]
+par(mfrow = c(1, 3))
+image(t(dataMatrixOrdered)[, nrow(dataMatrixOrdered):1])
+plot(rowMeans(dataMatrixOrdered), 40:1, , xlab = "Row Mean", ylab = "Row", pch = 19)
+plot(colMeans(dataMatrixOrdered), xlab = "Column", ylab = "Column Mean", pch = 19)
+
+#Related problems
+#You have multivariate variables $X_1,\ldots,X_n$ so $X_1 = (X_{11},\ldots,X_{1m})$
+# 1.Find a new set of multivariate variables that are uncorrelated and explain as much variance as possible.
+# 2. If you put all the variables together in one matrix, find the best matrix created with fewer variables (lower rank) that explains the original data.
+#The first goal is statistical and the second goal is data compression.
+
+#Related solutions - PCA/SVD
+#SVD
+
+#If $X$ is a matrix with each variable in a column and each observation in a row then the SVD is a "matrix decomposition"
+
+#$$ X = UDV^T$$
+        
+#where the columns of $U$ are orthogonal (left singular vectors), the columns of $V$ are orthogonal (right singular vectors) and $D$ is a diagonal matrix (singular values).
+
+#PCA
+#The principal components are equal to the right singular values if you first scale (subtract the mean, divide by the standard deviation) the variables.
+
+#Components of the SVD - $u$ and $v$
+svd1 <- svd(scale(dataMatrixOrdered))
+par(mfrow = c(1, 3))
+image(t(dataMatrixOrdered)[, nrow(dataMatrixOrdered):1])
+plot(svd1$u[, 1], 40:1, , xlab = "Row", ylab = "First left singular vector", 
+     pch = 19)
+plot(svd1$v[, 1], xlab = "Column", ylab = "First right singular vector", pch = 19)
+
+#Components of the SVD - Variance explained
+par(mfrow = c(1, 2))
+plot(svd1$d, xlab = "Column", ylab = "Singular value", pch = 19)
+plot(svd1$d^2/sum(svd1$d^2), xlab = "Column", ylab = "Prop. of variance explained", 
+     pch = 19)
+
+#Relationship to principal components
+svd1 <- svd(scale(dataMatrixOrdered))
+pca1 <- prcomp(dataMatrixOrdered, scale = TRUE)
+plot(pca1$rotation[, 1], svd1$v[, 1], pch = 19, xlab = "Principal Component 1", 
+     ylab = "Right Singular Vector 1")
+abline(c(0, 1))
+
+#Components of the SVD - variance explained
+constantMatrix <- dataMatrixOrdered*0
+for(i in 1:dim(dataMatrixOrdered)[1]){constantMatrix[i,] <- rep(c(0,1),each=5)}
+svd1 <- svd(constantMatrix)
+par(mfrow=c(1,3))
+image(t(constantMatrix)[,nrow(constantMatrix):1])
+plot(svd1$d,xlab="Column",ylab="Singular value",pch=19)
+plot(svd1$d^2/sum(svd1$d^2),xlab="Column",ylab="Prop. of variance explained",pch=19)
+
+#What if we add a second pattern?
+set.seed(678910)
+for (i in 1:40) {
+        # flip a coin
+        coinFlip1 <- rbinom(1, size = 1, prob = 0.5)
+        coinFlip2 <- rbinom(1, size = 1, prob = 0.5)
+        # if coin is heads add a common pattern to that row
+        if (coinFlip1) {
+                dataMatrix[i, ] <- dataMatrix[i, ] + rep(c(0, 5), each = 5)
+        }
+        if (coinFlip2) {
+                dataMatrix[i, ] <- dataMatrix[i, ] + rep(c(0, 5), 5)
+        }
+}
+hh <- hclust(dist(dataMatrix))
+dataMatrixOrdered <- dataMatrix[hh$order, ]
+
+#Singular value decomposition - true patterns
+svd2 <- svd(scale(dataMatrixOrdered))
+par(mfrow = c(1, 3))
+image(t(dataMatrixOrdered)[, nrow(dataMatrixOrdered):1])
+plot(rep(c(0, 1), each = 5), pch = 19, xlab = "Column", ylab = "Pattern 1")
+plot(rep(c(0, 1), 5), pch = 19, xlab = "Column", ylab = "Pattern 2")
+
+#$v$ and patterns of variance in rows
+svd2 <- svd(scale(dataMatrixOrdered))
+par(mfrow = c(1, 3))
+image(t(dataMatrixOrdered)[, nrow(dataMatrixOrdered):1])
+plot(svd2$v[, 1], pch = 19, xlab = "Column", ylab = "First right singular vector")
+plot(svd2$v[, 2], pch = 19, xlab = "Column", ylab = "Second right singular vector")
+
+#$d$ and variance explained
+svd1 <- svd(scale(dataMatrixOrdered))
+par(mfrow = c(1, 2))
+plot(svd1$d, xlab = "Column", ylab = "Singular value", pch = 19)
+plot(svd1$d^2/sum(svd1$d^2), xlab = "Column", ylab = "Percent of variance explained", 
+     pch = 19)
+
+#Missing values
+dataMatrix2 <- dataMatrixOrdered
+## Randomly insert some missing data
+dataMatrix2[sample(1:100, size = 40, replace = FALSE)] <- NA
+svd1 <- svd(scale(dataMatrix2))  ## Doesn't work!
+## Error: infinite or missing values in 'x'
+
+#Imputing {impute}
+source("http://bioconductor.org/biocLite.R")
+biocLite("impute")
+library(impute)  ## Available from http://bioconductor.org
+dataMatrix2 <- dataMatrixOrdered
+dataMatrix2[sample(1:100,size=40,replace=FALSE)] <- NA
+dataMatrix2 <- impute.knn(dataMatrix2)$data
+svd1 <- svd(scale(dataMatrixOrdered)); svd2 <- svd(scale(dataMatrix2))
+par(mfrow=c(1,2)); plot(svd1$v[,1],pch=19); plot(svd2$v[,1],pch=19)
+
+setwd("d:/Кости/R/Git_R/Test_K2/")
+#Face example
+load("data/face.rda")
+image(t(faceData)[, nrow(faceData):1])
+
+#Face example - variance explained
+svd1 <- svd(scale(faceData))
+plot(svd1$d^2/sum(svd1$d^2), pch = 19, xlab = "Singular vector", ylab = "Variance explained")
+
+#Face example - create approximations
+svd1 <- svd(scale(faceData))
+## Note that %*% is matrix multiplication
+
+# Here svd1$d[1] is a constant
+approx1 <- svd1$u[, 1] %*% t(svd1$v[, 1]) * svd1$d[1]
+
+# In these examples we need to make the diagonal matrix out of d
+approx5 <- svd1$u[, 1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[, 1:5])
+approx10 <- svd1$u[, 1:10] %*% diag(svd1$d[1:10]) %*% t(svd1$v[, 1:10])
+
+#Face example - plot approximations
+par(mfrow = c(1, 4))
+image(t(approx1)[, nrow(approx1):1], main = "(a)")
+image(t(approx5)[, nrow(approx5):1], main = "(b)")
+image(t(approx10)[, nrow(approx10):1], main = "(c)")
+image(t(faceData)[, nrow(faceData):1], main = "(d)")  ## Original data
+
+## Case Studies 
+
+setwd("D:/Кости/R/Git_R/Test_K2")
+
+# Slightly processed data
+load("data/samsungData.rda")
+names(samsungData)[1:12]
+table(samsungData$activity)
+
+#Plotting average acceleration for first subject
+par(mfrow = c(1, 2), mar = c(5, 4, 1, 1))
+samsungData <- transform(samsungData, activity = factor(activity))
+sub1 <- subset(samsungData, subject == 1)
+plot(sub1[, 1], col = sub1$activity, ylab = names(sub1)[1])
+plot(sub1[, 2], col = sub1$activity, ylab = names(sub1)[2])
+legend("bottomright", legend = unique(sub1$activity), col = unique(sub1$activity), 
+       pch = 1)
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------        
+
+#Clustering based just on average acceleration
+source("myplclust.R")
+distanceMatrix <- dist(sub1[, 1:3])
+hclustering <- hclust(distanceMatrix)
+myplclust(hclustering, lab.col = unclass(sub1$activity))
+
+#Plotting max acceleration for the first subject
+par(mfrow = c(1, 2))
+plot(sub1[, 10], pch = 19, col = sub1$activity, ylab = names(sub1)[10])
+plot(sub1[, 11], pch = 19, col = sub1$activity, ylab = names(sub1)[11])
+
+#Clustering based on maximum acceleration
+source("myplclust.R")
+distanceMatrix <- dist(sub1[, 10:12])
+hclustering <- hclust(distanceMatrix)
+myplclust(hclustering, lab.col = unclass(sub1$activity))
+
+#Singular Value Decomposition
+svd1 = svd(scale(sub1[, -c(562, 563)]))
+par(mfrow = c(1, 2))
+plot(svd1$u[, 1], col = sub1$activity, pch = 19)
+plot(svd1$u[, 2], col = sub1$activity, pch = 19)
+
+#Find maximum contributor
+plot(svd1$v[, 2], pch = 19)
+
+#New clustering with maximum contributer
+maxContrib <- which.max(svd1$v[, 2])
+distanceMatrix <- dist(sub1[, c(10:12, maxContrib)])
+hclustering <- hclust(distanceMatrix)
+myplclust(hclustering, lab.col = unclass(sub1$activity))
+
+#New clustering with maximum contributer
+names(samsungData)[maxContrib]
+
+#K-means clustering (nstart=1, first try)
+kClust <- kmeans(sub1[, -c(562, 563)], centers = 6)
+table(kClust$cluster, sub1$activity)
+
+#K-means clustering (nstart=1, second try)
+kClust <- kmeans(sub1[, -c(562, 563)], centers = 6, nstart = 1)
+table(kClust$cluster, sub1$activity)
+
+#K-means clustering (nstart=100, first try)
+kClust <- kmeans(sub1[, -c(562, 563)], centers = 6, nstart = 100)
+table(kClust$cluster, sub1$activity)
+
+#K-means clustering (nstart=100, second try)
+kClust <- kmeans(sub1[, -c(562, 563)], centers = 6, nstart = 100)
+table(kClust$cluster, sub1$activity)
+
+#Cluster 1 Variable Centers (Laying)
+plot(kClust$center[1, 1:10], pch = 19, ylab = "Cluster Center", xlab = "")
+
+#Cluster 2 Variable Centers (Walking)
+plot(kClust$center[4, 1:10], pch = 19, ylab = "Cluster Center", xlab = "")
+
 
 
 
