@@ -345,11 +345,13 @@ x%*%y # умножение матриц
 
 file.remove('testdir')
 
+x <- 8
 if(x>3){
         y<- 10
 }else{
         y <- 0
 }
+y
 
 y <- if(x>3) {
         10
@@ -3243,9 +3245,6 @@ plot(sub1[, 2], col = sub1$activity, ylab = names(sub1)[2])
 legend("bottomright", legend = unique(sub1$activity), col = unique(sub1$activity), 
        pch = 1)
 
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------        
 
 #Clustering based just on average acceleration
 source("myplclust.R")
