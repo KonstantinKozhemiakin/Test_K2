@@ -1,7 +1,7 @@
-train <- read.table(file = "D:/�����/R/R Script/Task_BigDataSchool/train.txt",header = T)
-test <- read.table(file = "D:/�����/R/R Script/Task_BigDataSchool/test.txt",header = T,sep = "\t")
-base_1 <- read.table(file = "D:/�����/R/R Script/Task_BigDataSchool/Base1.txt",header = T,sep = "\t")
-base_2 <- read.table(file = "D:/�����/R/R Script/Task_BigDataSchool/Base2.txt",header = T,sep = "\t")
+train <- read.table(file = "D:/Кости/R/R Script/Task_BigDataSchool/train.txt",header = T)
+test <- read.table(file = "D:/Кости/R/R Script/Task_BigDataSchool/test.txt",header = T,sep = "\t")
+base_1 <- read.table(file = "D:/Кости/R/R Script/Task_BigDataSchool/Base1.txt",header = T,sep = "\t")
+base_2 <- read.table(file = "D:/Кости/R/R Script/Task_BigDataSchool/Base2.txt",header = T,sep = "\t")
 
 library(dplyr)
 library(psych)
@@ -12,10 +12,13 @@ magb3 <- merge(agb1,magb2,by="ID")
 magb5 <- merge(magb1,magb2,by='ID')
 magb6 <- na.omit(magb3)
 magb7 <- magb6[,c(3:44,46:50)]
+magb8 <-subset(magb7,TARGET.y==2|TARGET.y==3)
 #-------------------------------------------------------------------------------
 agb1  <- aggregate(magb1[,-2],by=list(magb1$ID),FUN=mean,na.rm=T)
 agb2 <- aggregate(agb1[,-c(1:2)],by=list(agb1$TARGET),FUN=mean,na.rm=T,digits=1)
 agb3 <- aggregate(magb1[,-2],by=list(magb1$TARGET),FUN = median,na.rm=T)
+agb4 <- na.omit(agb1[,c(3:ncol(agb1))])
+agb5 <- log(agb4[,c(1:42)])
 #-------------------------------------------------------------------------------
 levels(magb2$T1) <-c(1:25) 
 levels(magb2$T2) <- c(1:7)
@@ -38,7 +41,7 @@ str(magb1)
 summary(magb1)
 magb1$TARGET <- as.factor(magb1$TARGET)
 df1 <- subset(magb1, TARGET!= "0"& TARGET!= "2")
-hist(df1$V40)
+
 library(ggplot2)
 agb1$TARGET <- as.factor(agb1$TARGET)
 ggplot(agb1,aes(TARGET,V40))+
@@ -292,8 +295,112 @@ print(fit_table2,type="html",file="fit_table2.html")
 
 stargazer(fit1,type="html",dep.var.labels = "Target",covariate.labels = c("V40","T2"),out = "models1.html")
 #-------------------------------------------------------------------------------
+T1 <- table(magb7[,c(44,47)])
+chisq.test(T1)
 
+patients <- rbind(c(18, 7), c(6, 13))
+#подпишем строки и столбцы
+colnames(patients) <- c("Yes", "No")
+rownames(patients) <- c("Placebo", "Aspirin")
+chisq.test(patients)
+#Proverka ostatkov shitesta
+mosaicplot(patients, color=T, shade=T, ylab="Thrombosis", xlab="Group")
 
-
+fisher.test(cbind(c(1,3),c(3,1))) 
 #-------------------------------------------------------------------------------
+#Klasterizacija K-means
+library(ggplot2)
+d <- iris[, c("Sepal.Length", "Petal.Width")]
 
+fit <- kmeans(d, 3)
+d$clusters <- factor(fit$cluster)
+
+ggplot(d, aes(Sepal.Length, Petal.Width, col = clusters))+
+        geom_point(size = 2)+
+        theme_bw() 
+
+#Klasterizacija ierarhicheskaja
+library(ggplot2) 
+library(ggrepel) # для симпатичной подписи точек на графике
+
+x <- rnorm(10)
+y <- rnorm(10)
+test_data <- data.frame(x, y)
+test_data$labels <- 1:10
+
+ggplot(test_data, aes(x, y, label = labels))+
+        geom_point()+
+        geom_text()
+
+d = dist(test_data)
+fit <- hclust(d, method = "single")
+plot(fit, labels = test_data$labels)
+rect.hclust(fit, 3) # укажите желаемое число кластеров, сейчас стоит 2
+
+test_data <- read.csv("https://stepic.org/media/attachments/course/524/test_data_hclust.csv")
+str(test_data)
+smart_hclust(test_data, 3) # выделено три кластера
+#В этой и следующей задаче на кластерный анализ предполагается, что мы используем функцию hclust() для 
+#кластеризации данных с параметрами �по умолчанию:
+hclust(d, method = "complete", members = NULL)
+#Для расчета матрицы расстояний предполагается, что используется функция dist() также с параметрами по умолчанию:
+dist(x, method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+#Для выделения желаемого числа кластеров по результатам иерархической кластеризации воспользуйтесь функцией cutree().
+#Иными словами, для кластеризации данных swiss на три кластера мы бы использовали команды:
+dist_matrix <- dist(swiss) # расчет матрицы расстояний
+fit <- hclust(dist_matrix) # иерархическая кластеризация 
+cluster <- cutree(fit, 3) # номер кластера для каждого наблюдения
+
+d = dist(agb1[,c(3:42)],method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+fit <- hclust(d, method = "complete", members = NULL)
+plot(fit, labels = agb1$TARGET)
+rect.hclust(fit, 4) # укажите желаемое число кластеров
+
+dist_matrix <- dist(agb1[,c(3:44)]) 
+fit <- hclust(dist_matrix)
+cluster <- cutree(fit, 4)
+#-------------------------------------------------------------------------------
+#Metod analiza glavnh komponent
+test_data <- read.csv("https://stepic.org/media/attachments/course/524/pca_test.csv")
+get_pc <- prcomp(test_data)
+#-------------------------------------------------------------------------------
+#Problema s plavajushchej zapjatoj
+0.1+0.05==0.15
+#[1] FALSE
+isTRUE(all.equal(0.1+0.05, 0.15))
+#-------------------------------------------------------------------------------
+#Proverka geteroskedastichnosti
+qplot(x=carat,y=price,data=diamonds)+
+        geom_smooth(method = lm)
+qplot(x=log(carat),y=log(price),data=diamonds)+
+        geom_smooth(method = lm)
+library(lmtest)
+bptest(lm(carat~price,diamonds))
+bptest(lm(log(carat)~log(price),diamonds))
+fit6 <- lm(carat~price,diamonds)
+fit6 <- lm(log(carat)~log(price),diamonds)
+shapiro.test(fit6$residuals)
+plot(fit6)
+#-------------------------------------------------------------------------------               
+
+hist(magb7$V40)
+hist(log(magb7$V40))
+qqplot(log(magb7$V40),magb1$TARGET)
+
+fit <- glm(TARGET.y~.,data = magb7)
+optimalfit <- step(fit,direction = 'backward')
+summary(optimalfit)
+summary(fit)
+plot(optimalfit)
+anova(fit,optimalfit)
+fit2 <- lm(as.numeric(TARGET)~.,data=agb4)
+summary(fit2)
+fit3 <- aov(as.numeric(TARGET)~.,data=agb4)
+summary(fit3)
+anova(fit2,fit3) 
+
+library("car") 
+vif(optimalfit) #Proverka na nalichie multikolinearnosti
+
+fit.res <- lm(I(optimalfit$residuals^2)) 
+summary(fit.res)
