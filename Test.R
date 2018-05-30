@@ -13,6 +13,8 @@ magb5 <- merge(magb1,magb2,by='ID')
 magb6 <- na.omit(magb3)
 magb7 <- magb6[,c(3:44,46:50)]
 magb8 <-subset(magb7,TARGET.y==2|TARGET.y==3)
+magb9 <- magb7[,1:42]
+magb10 <- magb7[sapply(magb7,is.numeric)]
 #-------------------------------------------------------------------------------
 agb1  <- aggregate(magb1[,-2],by=list(magb1$ID),FUN=mean,na.rm=T)
 agb2 <- aggregate(agb1[,-c(1:2)],by=list(agb1$TARGET),FUN=mean,na.rm=T,digits=1)
@@ -382,7 +384,7 @@ fit6 <- lm(log(carat)~log(price),diamonds)
 shapiro.test(fit6$residuals)
 plot(fit6)
 #-------------------------------------------------------------------------------               
-
+#Test
 hist(magb7$V40)
 hist(log(magb7$V40))
 qqplot(log(magb7$V40),magb1$TARGET)
@@ -404,3 +406,355 @@ vif(optimalfit) #Proverka na nalichie multikolinearnosti
 
 fit.res <- lm(I(optimalfit$residuals^2)) 
 summary(fit.res)
+#-------------------------------------------------------------------------------
+#Smeshannie regressionnie modeli
+library(lme4)
+library(mlmRev)
+library(lmerTest)
+#-------------------------------------------------------------------------------
+magb9 <- magb7[,1:42]
+
+
+NA_position <- function(x,y){
+        all(is.na(x)==is.na(y))
+}
+
+sum(is.na(magb9))
+magb9[is.na(magb9)]
+sum(apply(magb9,2,is.na))
+
+outliers_count <- function(x){
+        otliers <- x[abs(x - mean(x)) > 2 * sd(x)]
+        if (length(otliers) > 0){
+                return(otliers)
+        } else {
+                return("There are no otliers")
+        }
+}
+
+magb9_outliers <- apply(magb9, 2, outliers_count)
+str(magb9_outliers)
+
+sum_isnan <- function(x){
+        sum(is.nan(x))
+}
+sum_isnan_m <- apply(magb9,2,sum_isnan)
+
+sum_0 <- function(x){
+        sum(x==0)
+}
+sum_0_m <- apply(magb9,2,sum_0)
+
+log(magb9$V1[magb9$V1!="0"])
+
+apply(magb9,2,log_m)
+
+log_m <- function(x){
+        log_mm <- log(x[x!=0])
+}
+log_m(magb9)
+
+
+aov_res <- apply(magb7[,1:42],2,function(x) aov(x~magb7$TARGET.y))
+summary(aov_res$V40)
+norm_test <- apply(magb7[,1:42],2,function(x) shapiro.test(x[sample(x,4000)])) 
+#-------------------------------------------------------------------------------
+#Vivod negativnih znachenij tablici bez NA
+test_data <- as.data.frame(list(V1 = c(-9.7, -10, -10.5, -7.8, -8.9), V2 = c(NA, -10.2, -10.1, -9.3, -12.2), V3 = c(NA, NA, -9.3, -10.9, -9.8)))
+test_data <- as.data.frame(list(V1 = c(NA, -0.5, -0.7, -8), V2 = c(-0.3, NA, -2, -1.2), V3 = c(1, 2, 3, NA)))
+
+get_negative_values <- function(X){
+        res <- apply(X[apply(X, 2, function(X) length(X[X<0 & !is.na(X)])>0)], 2, function(X) X[X<0 & !is.na(X)])
+        return(res)
+}
+
+get_negative_values <- function(test_data){    
+        negative_col <- apply(test_data, 2, function(x) any(x[!is.na(x)] < 0))    
+        return(apply(test_data[negative_col], 2, function(x) x[!is.na(x) & x <0]))}
+
+get_negative_values <- function(df) {
+        d = apply(df, 2, function (x) x[ x < 0  &  !is.na(x) ])
+        d[ lengths(d) > 0 ]
+}
+
+get_negative_values(test_data)
+#-------------------------------------------------------------------------------
+#Delete NA in dataframe
+test_data <- as.data.frame(list(V1 = c(NA, NA, NA, NA, 13, 12, 9, 10, 8, 9, 11, 11, 10, 12, 9), V2 = c(NA, 12, 8, NA, 11, 11, 9, 8, 8, 10, 10, 11, 10, 10, 10), V3 = c(NA, 5, NA, 13, 12, 11, 11, 14, 8, 12, 8, 8, 10, 10, 8), V4 = c(10, 10, 10, 10, 13, 10, 11, 7, 12, 10, 7, 10, 13, 10, 9)))
+na_rm <- function(x){
+        na <- function(x){x[is.na(x)] <- mean(x,na.rm=T);x}
+        test1 <- apply(x,2,na)
+        return(as.data.frame(test1))
+}
+
+na_rm <- function(x){
+        return(as.data.frame(apply(x,2,function(x){ x[is.na(x)] <- mean(x,na.rm=T);x})))
+}
+
+na_rm  <- function(x){
+        as.data.frame(
+                mapply(
+                        function(vec, val) {vec[is.na(vec)] <- val; vec},
+                        x,
+                        colMeans(x, na.rm = T)
+                )
+        )
+}
+
+na_rm  <- function(x) {
+        if (anyNA(x)) {
+                f <- function(xx) {
+                        nas <- is.na(xx)
+                        xx[nas] <- sum(xx, na.rm = TRUE) / sum(!nas)
+                        xx
+                }
+                x <- as.data.frame(apply(x, 2, f))
+        }
+        x
+}
+
+na_rm  <- function(x){
+        as.data.frame(apply(x, 2, function(y) replace (y, is.na(y), mean(y, na.rm = T))))
+        
+}
+
+na_rm  <- function(x){
+        setMean <- function(y){
+                mean_val <- mean(y[!is.na(y)])
+                y[is.na(y)] <- mean_val
+                return(y)
+        } 
+        
+        as.data.frame(apply(x,2,setMean))
+}
+
+
+na_rm(test_data)
+#-------------------------------------------------------------------------------
+# Logarifmiruem tablici
+log_m <- function(x){
+        pr <- function(x){x[x<0.01] <- 0.01;x}
+        pr1 <- apply(x,2,function(x)pr(x))
+        return(as.data.frame(apply(pr1,2,function(x) log(x))))
+}
+
+x <- magb9
+logmagb <- log_m(x)
+
+log_m <- function(x){
+        pr <- apply(x,2,function(x){x[x<0.01] <- 0.01;x})
+        return(as.data.frame(apply(pr1,2,function(x) log(x))))
+}
+
+log_m <- function(x){
+        return(as.data.frame(apply(apply(x,2,function(x){x[x<0.01] <- 0.01;x}),2,function(x) log(x))))
+}
+#-------------------------------------------------------------------------------
+#Summa polozhitelnih znachenij list 
+d <- data.frame(X1 = c(-1, -2, 0), X2 = c(10, 4, NA), X3 = c(-4, NA, NA))
+positive_sum <-  function(test_data){
+        lapply(test_data,function(x)sum(x[!is.na(x)& x>0]))
+        
+}
+
+positive_sum <-  function(d){
+        lapply(d, FUN = function(x) sum(subset(x, x > 0)))
+}
+
+positive_sum <- function(df) {
+        lapply(lapply(df, function(x) subset(x, x>=0)), sum)
+}
+
+positive_sum(d)
+#-------------------------------------------------------------------------------
+m_names <- mapply(paste, list("row", "col"), list(1:100, 1:200), sep = "_")
+str(m_names)
+
+# Poluchit srednee otklonenie
+get_sd <- function(x){
+        num_var <- sapply(x, is.numeric)
+        sapply(x[num_var], sd)
+}
+
+# Cуществуют различные способы обращения к колонкам dataframe:
+# my_df[1] - получим dataframe
+# my_df[[1]] - получим вектор
+# my_df[, 1] - получим вектор
+#-------------------------------------------------------------------------------
+# Otbor dannih po chasti nazvanija peremennoj
+test_data <- as.data.frame(list(name = c("p4@HPS1", "p7@HPS2", "p4@HPS3", "p7@HPS4", "p7@HPS5", "p9@HPS6", "p11@HPS7", "p10@HPS8", "p15@HPS9"), expression = c(118.84, 90.04, 106.6, 104.99, 93.2, 66.84, 90.02, 108.03, 111.83)))
+names = c("HPS5", "HPS6", "HPS9", "HPS2", "HPS3", "HPS7", "HPS4", "HPS8")
+names = c("HPS5")
+dataset <- as.data.frame(list(name = c("p4@HPS1", "p7@HPS2", "p4@HPS3", "p7@HPS4", "p7@HPS5", "p9@HPS6", "p11@HPS7", "p10@HPS8", "p15@HPS9"), expression = c(118.84, 90.04, 106.6, 104.99, 93.2, 66.84, 90.02, 108.03, 111.83)))
+
+
+my_names <- function (dataset, names){ 
+       a <- as.data.frame(sapply(names,function(x) grepl(x,dataset[[1]])))
+       b <- as.logical(rowSums(a))
+       c <- test_data$name
+       d <- as.character(c[b])
+       e <- as.data.frame(sapply(d,function(x)x==dataset[[1]]))
+       f <- as.logical(rowSums(e))
+       g <- dataset[f,seq(dataset)]
+       return(g)
+       
+}
+
+my_names <- function (dataset, names){    
+        dataset[as.numeric(lapply(names, function(x) which(grepl(x, dataset$name)))),]}
+#Режем вектор names и для каждого элемента ищем вхождение в колонку x$mane с помощью grepl
+#which - выводит номера истины (т.е. где вхождение было правдой)
+
+
+my_names <- function (dataset, names) {
+        dataset[sapply(names, grep, dataset$name), ]
+}
+
+# s uchetom povtorenij
+my_names <- function (dataset, names) dataset[grepl(paste(names,collapse = "|"), dataset$name),]
+
+# Bez grep
+my_names <- function (dataset, names) {
+        dataset[gsub(".*@", "", dataset$name) %in% unique(names), ]
+}
+
+my_names <- function (dataset, names){
+        f <- function (y) any(sapply(names, function (x) grepl(x, y)))
+        dataset[c(apply(dataset, 1, f)),]
+}
+        
+my_names <- function (dataset, names){
+        t<-sapply(names,function(x) grepl(x,dataset[,1]))
+        dataset[apply(t,1,any),]
+}
+
+my_names <- function(test_data, names){
+        e <- sapply(names, function(x) grepl(x, test_data[,'name']))
+        q <- which(e == T, arr.ind = T)
+        return(test_data[q[,1],])
+}
+
+my_names <- function (dataset, names){
+        dataset[as.logical(apply(sapply(names, function(x) grepl(x,dataset$name)), 1, sum)),]
+}
+
+my_names <- function (dataset, names){
+        m1 <- sapply(names, function(x) grepl(x, dataset[,1]))
+        m2 <- apply(m1,1,any)
+        dataset[m2,]
+}
+
+my_names <- function (dataset, names){ 
+        ans<- dataset[grepl(names[1], dataset$name), ]
+        for(i in 1:length(names)){
+                ans[i, ] <- dataset[grepl(names[i], dataset$name), ]
+        }
+        return(ans)
+}
+
+my_names <- function(df, names) {
+        is_in_names <- function(cell) any(sapply(names, function(n) (grepl(n, cell))))
+        df[sapply(df$name, is_in_names),]
+}
+
+my_names(test_data,names)
+#-------------------------------------------------------------------------------
+# Postroenie regressionnoj modeli na peremennih s norm raspredeleniem
+smart_lm(swiss)
+
+test_data <- read.csv("https://stepik.org/media/attachments/course/724/test.csv")
+smart_lm(test_data)
+
+test_data <- data.frame(x = 1:100, y = 1:100, z = 1:100)
+smart_lm(test_data)
+
+smart_lm <- function(x){
+        col <- x[2:ncol(x)]
+        y <- x[(sapply(col[sapply(col, is.numeric)],function(x)shapiro.test(x)$p.value))>0.05]
+        return(if(ncol(y)<1) {paste("There are no normal variables in the data")}
+                  else{as.vector((lm(paste(paste((labels(y)[[2]])[1]), paste((labels(y)[[2]])[2:ncol(y)], collapse=" + ") , sep=" ~ "),data=y))$coefficients)
+                  })
+}
+
+smart_lm <- function(x){
+        y <- x[(sapply(x[-1][sapply(x[-1], is.numeric)],function(x)shapiro.test(x)$p.value))>0.05]
+        return(if(ncol(y)<1) {paste("There are no normal variables in the data")}
+               else{lm(y)$coefficients
+               })
+}
+
+smart_lm <- function(df){
+        is.normal <- sapply(df[-1], function(x) shapiro.test(x)$p > 0.05)
+        if (sum(is.normal) > 0) {
+                lm(df[c(T, is.normal)])$coeff
+        } else {
+                "There are no normal variables in the data"
+        }
+}
+
+smart_lm <- function(test_data){
+        filtered_data <- cbind(test_data[1],test_data[-1][sapply(test_data[-1],function(x) shapiro.test(x)$p.value) > 0.05])
+        if (length(filtered_data) == 1) return("There are no normal variables in the data")
+        fit <- lm(filtered_data)
+        fit$coefficients
+}
+
+smart_lm <- function(x){
+        idx <- names(which(sapply(lapply(x[-1], shapiro.test), '[[', "p.value") > 0.05))
+        if(length(idx)>0) lm(x[,1] ~ ., data = x[idx])$coef else print("There are no normal variables in the data") 
+}
+#-------------------------------------------------------------------------------
+#Vitaskivaem p-znachenie iz otcheta shapiro-test
+x <- rnorm(30, 10, 1)
+t.test(x, mu=10)
+
+test_1 <- shapiro.test(iris$Sepal.Length)
+test_2 <- shapiro.test(iris$Sepal.Width)
+test_3 <- shapiro.test(iris$Petal.Length)
+test_4 <- shapiro.test(iris$Petal.Width)
+
+normality_tests <- list(test_1, test_2, test_3, test_4)
+normality_tests <- lapply(iris[, 1:4], shapiro.test)
+
+get_p_value <- function(test_list){
+        return(sapply(test_list,function(x) x[2]))
+        
+}
+
+get_p_value <- function(test_list){
+        return(lapply(test_list, function(x) x$p.value))
+}
+
+get_p_value = function(test_data){    
+        sapply(test_data, '[', 2)}
+
+get_p_value <- function(test_list){
+        lapply(test_list, .subset2, "p.value")
+}
+
+x <- normality_tests
+x[[1]]$p.value
+sapply(x,function(x) x[2])
+
+#-------------------------------------------------------------------------------
+#Sravnenie viborochnih srednih so srednim generalnoj sovokupnosti 
+x <- rnorm(30, 10, 1)
+t.test(x, mu=10)
+one_sample_t(iris[, 1:4], 4)
+
+one_sample_t <- function(test_data, general_mean <- 4){
+        test_data <- sapply(test_data,function(x)x[is.numeric(x)])
+        test_data[,!is.numeric(test_data)]
+        sapply(test_data,function(x)t.test(x,mu=4))
+        
+}
+#-------------------------------------------------------------------------------
+aggregate(mpg ~ cyl + am, mtcars, mean) 
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
